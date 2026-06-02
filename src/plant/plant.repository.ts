@@ -1,66 +1,1 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { IPlantRepository, CreatePlantData } from './domain/plant.repository.interface';
-import { Plant } from './domain/plant.entity';
-
-@Injectable()
-export class PlantPrismaRepository implements IPlantRepository {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private toEntity(raw: any): Plant {
-    return new Plant(
-      raw.id,
-      raw.name,
-      raw.category,
-      raw.imageUrl,
-      raw.minTemperature,
-      raw.maxTemperature,
-      raw.minHumidity,
-      raw.maxHumidity,
-      raw.lightHours,
-      raw.minWaterLevel,
-      raw.minSoilMoisture,
-      raw.wateringFrequency,
-      raw.createdAt,
-    );
-  }
-
-  async findAll(): Promise<Plant[]> {
-    const plants = await this.prisma.plant.findMany({
-      orderBy: [{ category: 'asc' }, { name: 'asc' }],
-    });
-    return plants.map(p => this.toEntity(p));
-  }
-
-  async findById(id: number): Promise<Plant | null> {
-    const plant = await this.prisma.plant.findUnique({ where: { id } });
-    return plant ? this.toEntity(plant) : null;
-  }
-
-  async findByCategory(category: string): Promise<Plant[]> {
-    const plants = await this.prisma.plant.findMany({
-      where: { category },
-      orderBy: { name: 'asc' },
-    });
-    return plants.map(p => this.toEntity(p));
-  }
-
-  async create(data: CreatePlantData): Promise<Plant> {
-    const plant = await this.prisma.plant.create({ data });
-    return this.toEntity(plant);
-  }
-
-  async update(id: number, data: Partial<CreatePlantData>): Promise<Plant> {
-    const plant = await this.prisma.plant.update({ where: { id }, data });
-    return this.toEntity(plant);
-  }
-
-  async delete(id: number): Promise<void> {
-    await this.prisma.plant.delete({ where: { id } });
-  }
-
-  async exists(id: number): Promise<boolean> {
-    const count = await this.prisma.plant.count({ where: { id } });
-    return count > 0;
-  }
-}
+import { Injectable } from '@nestjs/common';import { PrismaService } from 'src/shared/prisma/prisma.service';import { IPlantRepository, CreatePlantData } from './domain/plant.repository.interface';import { Plant } from './domain/plant.entity';@Injectable()export class PlantPrismaRepository implements IPlantRepository {  constructor(private readonly prisma: PrismaService) {}  private toEntity(raw: any): Plant {    return new Plant(      raw.id,      raw.name,      raw.category,      raw.imageUrl,      raw.minTemperature,      raw.maxTemperature,      raw.minHumidity,      raw.maxHumidity,      raw.lightHours,      raw.minWaterLevel,      raw.minSoilMoisture,      raw.wateringFrequency,      raw.createdAt,    );  }  async findAll(): Promise<Plant[]> {    const plants = await this.prisma.plant.findMany({      orderBy: [{ category: 'asc' }, { name: 'asc' }],    });    return plants.map(p => this.toEntity(p));  }  async findById(id: number): Promise<Plant | null> {    const plant = await this.prisma.plant.findUnique({ where: { id } });    return plant ? this.toEntity(plant) : null;  }  async findByCategory(category: string): Promise<Plant[]> {    const plants = await this.prisma.plant.findMany({      where: { category },      orderBy: { name: 'asc' },    });    return plants.map(p => this.toEntity(p));  }  async create(data: CreatePlantData): Promise<Plant> {    const plant = await this.prisma.plant.create({ data });    return this.toEntity(plant);  }  async update(id: number, data: Partial<CreatePlantData>): Promise<Plant> {    const plant = await this.prisma.plant.update({ where: { id }, data });    return this.toEntity(plant);  }  async delete(id: number): Promise<void> {    await this.prisma.plant.delete({ where: { id } });  }  async exists(id: number): Promise<boolean> {    const count = await this.prisma.plant.count({ where: { id } });    return count > 0;  }}

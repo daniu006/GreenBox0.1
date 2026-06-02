@@ -1,47 +1,1 @@
-import { Inject, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { IAlertRepository, ALERT_REPOSITORY } from '../domain/alert.repository.interface';
-import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { Alert } from '../domain/alert.entity';
-
-@Injectable()
-export class ResolveAlertUseCase {
-  constructor(
-    @Inject(ALERT_REPOSITORY)
-    private readonly alertRepository: IAlertRepository,
-    private readonly prisma: PrismaService,
-  ) {}
-
-  async resolve(id: number, userId: string): Promise<Alert> {
-    const alert = await this.alertRepository.findById(id);
-    if (!alert) throw new NotFoundException('Alerta no encontrada');
-
-    // Verificar que la alerta pertenece al usuario — seguridad backend
-    await this.verifyOwnership(alert.userPlantId, userId);
-
-    return this.alertRepository.resolve(id);
-  }
-
-  async resolveAll(userPlantId: number, userId: string): Promise<void> {
-    await this.verifyOwnership(userPlantId, userId);
-    await this.alertRepository.resolveAll(userPlantId);
-  }
-
-  async delete(id: number, userId: string): Promise<void> {
-    const alert = await this.alertRepository.findById(id);
-    if (!alert) throw new NotFoundException('Alerta no encontrada');
-
-    await this.verifyOwnership(alert.userPlantId, userId);
-    await this.alertRepository.delete(id);
-  }
-
-  private async verifyOwnership(userPlantId: number, userId: string): Promise<void> {
-    const userPlant = await this.prisma.userPlant.findUnique({
-      where: { id: userPlantId },
-      select: { userId: true },
-    });
-
-    if (!userPlant || userPlant.userId !== userId) {
-      throw new ForbiddenException('No tienes permiso sobre esta alerta');
-    }
-  }
-}
+import { Inject, Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';import { IAlertRepository, ALERT_REPOSITORY } from '../domain/alert.repository.interface';import { PrismaService } from 'src/shared/prisma/prisma.service';import { Alert } from '../domain/alert.entity';@Injectable()export class ResolveAlertUseCase {  constructor(    @Inject(ALERT_REPOSITORY)    private readonly alertRepository: IAlertRepository,    private readonly prisma: PrismaService,  ) {}  async resolve(id: number, userId: string): Promise<Alert> {    const alert = await this.alertRepository.findById(id);    if (!alert) throw new NotFoundException('Alerta no encontrada');        await this.verifyOwnership(alert.userPlantId, userId);    return this.alertRepository.resolve(id);  }  async resolveAll(userPlantId: number, userId: string): Promise<void> {    await this.verifyOwnership(userPlantId, userId);    await this.alertRepository.resolveAll(userPlantId);  }  async delete(id: number, userId: string): Promise<void> {    const alert = await this.alertRepository.findById(id);    if (!alert) throw new NotFoundException('Alerta no encontrada');    await this.verifyOwnership(alert.userPlantId, userId);    await this.alertRepository.delete(id);  }  private async verifyOwnership(userPlantId: number, userId: string): Promise<void> {    const userPlant = await this.prisma.userPlant.findUnique({      where: { id: userPlantId },      select: { userId: true },    });    if (!userPlant || userPlant.userId !== userId) {      throw new ForbiddenException('No tienes permiso sobre esta alerta');    }  }}

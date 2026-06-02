@@ -1,27 +1,1 @@
-import {
-  IsNumber,
-  IsOptional,
-  IsString,
-  MaxLength,
-  Min,
-} from 'class-validator';
-
-export class CreateUserPlantDto {
-  @IsNumber({}, { message: 'El id del dispositivo debe ser un número' })
-  @Min(1)
-  boxId: number;
-
-  @IsNumber({}, { message: 'El id de la planta debe ser un número' })
-  @Min(1)
-  plantId: number;
-
-  @IsOptional()
-  @IsString()
-  @MaxLength(50, { message: 'El apodo no puede tener más de 50 caracteres' })
-  nickname?: string;
-}
-
-export class ArchiveUserPlantDto {
-  // No necesita datos adicionales — el id viene del param
-  // y el userId del token de Firebase
-}
+import {  IsNumber,  IsOptional,  IsString,  MaxLength,  Min,} from 'class-validator';export class CreateUserPlantDto {  @IsNumber({}, { message: 'El id del dispositivo debe ser un número' })  @Min(1)  boxId: number;  @IsNumber({}, { message: 'El id de la planta debe ser un número' })  @Min(1)  plantId: number;  @IsOptional()  @IsString()  @MaxLength(50, { message: 'El apodo no puede tener más de 50 caracteres' })  nickname?: string;}export class ArchiveUserPlantDto {    }

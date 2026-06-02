@@ -1,97 +1,1 @@
-import { Controller, Post, Patch, Get, Delete, Body, Param, ParseIntPipe, UseGuards, HttpCode, HttpStatus,
-} from '@nestjs/common';
-import { FirebaseAuthGuard } from '../shared/guards/firebase-auth.guard';
-import { CurrentUser, CurrentUserPayload } from '../shared/decorators/current-user.decorator';
-import { ValidateCodeUseCase } from './usecases/validate-code.usecase';
-import { UpdateLocationUseCase } from './usecases/update-location.usecase';
-import { RegisterFcmTokenUseCase } from './usecases/register-token.usecase';
-import { GetBoxesByUserUseCase } from './usecases/assign-box.usecase';
-import { ValidateCodeDto, UpdateLocationDto, RegisterFcmTokenDto, RemoveFcmTokenDto } from './box.dto';
-
-@Controller('box')
-@UseGuards(FirebaseAuthGuard) 
-export class BoxController {
-  constructor(
-    private readonly validateCodeUseCase: ValidateCodeUseCase,
-    private readonly updateLocationUseCase: UpdateLocationUseCase,
-    private readonly registerFcmTokenUseCase: RegisterFcmTokenUseCase,
-    private readonly getBoxesByUserUseCase: GetBoxesByUserUseCase,
-  ) {}
-
-  @Post('validate')
-  @HttpCode(HttpStatus.OK)
-  async validateCode(
-    @Body() dto: ValidateCodeDto,
-    @CurrentUser() user: CurrentUserPayload,
-  ) {
-    const result = await this.validateCodeUseCase.execute(dto.code, user.uid);
-    return {
-      message: 'Dispositivo validado exitosamente',
-      data: {
-        box: {
-          id: result.box.id,
-          code: result.box.code,
-          locationName: result.box.locationName,
-          hasLocation: result.box.hasLocation(),
-        },
-        plant: result.plant,
-      },
-    };
-  }
-
-  @Get()
-  async getMyBoxes(@CurrentUser() user: CurrentUserPayload) {
-    const boxes = await this.getBoxesByUserUseCase.execute(user.uid);
-    return {
-      message: 'Dispositivos obtenidos exitosamente',
-      data: boxes.map(b => ({
-        id: b.id,
-        code: b.code,
-        locationName: b.locationName,
-        latitude: b.latitude,
-        longitude: b.longitude,
-        hasLocation: b.hasLocation(),
-      })),
-    };
-  }
-
-  @Patch(':id/location')
-  async updateLocation(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateLocationDto,
-    @CurrentUser() user: CurrentUserPayload,
-  ) {
-    const box = await this.updateLocationUseCase.execute(
-      id,
-      user.uid,
-      dto.latitude,
-      dto.longitude,
-      dto.locationName,
-    );
-    return {
-      message: 'Ubicación actualizada exitosamente',
-      data: {
-        id: box.id,
-        locationName: box.locationName,
-        latitude: box.latitude,
-        longitude: box.longitude,
-      },
-    };
-  }
-
-  @Post(':id/token')
-  @HttpCode(HttpStatus.OK)
-  async registerToken(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: RegisterFcmTokenDto,
-  ) {
-    await this.registerFcmTokenUseCase.register(id, dto.token);
-    return { message: 'Token registrado exitosamente' };
-  }
-
-  @Delete('token')
-  async removeToken(@Body() dto: RemoveFcmTokenDto) {
-    await this.registerFcmTokenUseCase.remove(dto.token);
-    return { message: 'Token removido exitosamente' };
-  }
-}
+import { Controller, Post, Patch, Get, Delete, Body, Param, ParseIntPipe, UseGuards, HttpCode, HttpStatus,} from '@nestjs/common';import { FirebaseAuthGuard } from '../shared/guards/firebase-auth.guard';import { CurrentUser, CurrentUserPayload } from '../shared/decorators/current-user.decorator';import { ValidateCodeUseCase } from './usecases/validate-code.usecase';import { UpdateLocationUseCase } from './usecases/update-location.usecase';import { RegisterFcmTokenUseCase } from './usecases/register-token.usecase';import { GetBoxesByUserUseCase } from './usecases/assign-box.usecase';import { ValidateCodeDto, UpdateLocationDto, RegisterFcmTokenDto, RemoveFcmTokenDto } from './box.dto';@Controller('box')@UseGuards(FirebaseAuthGuard) export class BoxController {  constructor(    private readonly validateCodeUseCase: ValidateCodeUseCase,    private readonly updateLocationUseCase: UpdateLocationUseCase,    private readonly registerFcmTokenUseCase: RegisterFcmTokenUseCase,    private readonly getBoxesByUserUseCase: GetBoxesByUserUseCase,  ) {}  @Post('validate')  @HttpCode(HttpStatus.OK)  async validateCode(    @Body() dto: ValidateCodeDto,    @CurrentUser() user: CurrentUserPayload,  ) {    const result = await this.validateCodeUseCase.execute(dto.code, user.uid);    return {      message: 'Dispositivo validado exitosamente',      data: {        box: {          id: result.box.id,          code: result.box.code,          locationName: result.box.locationName,          hasLocation: result.box.hasLocation(),        },        plant: result.plant,      },    };  }  @Get()  async getMyBoxes(@CurrentUser() user: CurrentUserPayload) {    const boxes = await this.getBoxesByUserUseCase.execute(user.uid);    return {      message: 'Dispositivos obtenidos exitosamente',      data: boxes.map(b => ({        id: b.id,        code: b.code,        locationName: b.locationName,        latitude: b.latitude,        longitude: b.longitude,        hasLocation: b.hasLocation(),      })),    };  }  @Patch(':id/location')  async updateLocation(    @Param('id', ParseIntPipe) id: number,    @Body() dto: UpdateLocationDto,    @CurrentUser() user: CurrentUserPayload,  ) {    const box = await this.updateLocationUseCase.execute(      id,      user.uid,      dto.latitude,      dto.longitude,      dto.locationName,    );    return {      message: 'Ubicación actualizada exitosamente',      data: {        id: box.id,        locationName: box.locationName,        latitude: box.latitude,        longitude: box.longitude,      },    };  }  @Post(':id/token')  @HttpCode(HttpStatus.OK)  async registerToken(    @Param('id', ParseIntPipe) id: number,    @Body() dto: RegisterFcmTokenDto,  ) {    await this.registerFcmTokenUseCase.register(id, dto.token);    return { message: 'Token registrado exitosamente' };  }  @Delete('token')  async removeToken(@Body() dto: RemoveFcmTokenDto) {    await this.registerFcmTokenUseCase.remove(dto.token);    return { message: 'Token removido exitosamente' };  }}

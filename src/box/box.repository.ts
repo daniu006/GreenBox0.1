@@ -1,89 +1,1 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { IBoxRepository } from './domain/box.repository.interface';
-import { Box } from './domain/box.entity';
-
-@Injectable()
-export class BoxPrismaRepository implements IBoxRepository {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private toEntity(raw: any): Box {
-    return new Box(
-      raw.id,
-      raw.code,
-      raw.userId,
-      raw.latitude,
-      raw.longitude,
-      raw.locationName,
-      raw.fcmTokens,
-      raw.createdAt,
-    );
-  }
-
-  async findByCode(code: string): Promise<Box | null> {
-    const box = await this.prisma.box.findUnique({ where: { code } });
-    return box ? this.toEntity(box) : null;
-  }
-
-  async findById(id: number): Promise<Box | null> {
-    const box = await this.prisma.box.findUnique({ where: { id } });
-    return box ? this.toEntity(box) : null;
-  }
-
-  async findByUserId(userId: string): Promise<Box[]> {
-    const boxes = await this.prisma.box.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'asc' },
-    });
-    return boxes.map(this.toEntity);
-  }
-
-  async assignToUser(boxId: number, userId: string): Promise<Box> {
-    const box = await this.prisma.box.update({
-      where: { id: boxId },
-      data: { userId },
-    });
-    return this.toEntity(box);
-  }
-
-  async updateLocation(
-    boxId: number,
-    latitude: number,
-    longitude: number,
-    locationName: string,
-  ): Promise<Box> {
-    const box = await this.prisma.box.update({
-      where: { id: boxId },
-      data: { latitude, longitude, locationName },
-    });
-    return this.toEntity(box);
-  }
-
-  async addFcmToken(boxId: number, token: string): Promise<void> {
-    await this.prisma.box.update({
-      where: { id: boxId },
-      data: { fcmTokens: { push: token } },
-    });
-  }
-
-  async removeFcmToken(token: string): Promise<void> {
-    const boxes = await this.prisma.box.findMany({
-      where: { fcmTokens: { has: token } },
-    });
-
-    for (const box of boxes) {
-      await this.prisma.box.update({
-        where: { id: box.id },
-        data: { fcmTokens: { set: box.fcmTokens.filter(t => t !== token) } },
-      });
-    }
-  }
-
-  async getFcmTokens(boxId: number): Promise<string[]> {
-    const box = await this.prisma.box.findUnique({
-      where: { id: boxId },
-      select: { fcmTokens: true },
-    });
-    return box?.fcmTokens ?? [];
-  }
-}
+import { Injectable } from '@nestjs/common';import { PrismaService } from 'src/shared/prisma/prisma.service';import { IBoxRepository } from './domain/box.repository.interface';import { Box } from './domain/box.entity';@Injectable()export class BoxPrismaRepository implements IBoxRepository {  constructor(private readonly prisma: PrismaService) {}  private toEntity(raw: any): Box {    return new Box(      raw.id,      raw.code,      raw.userId,      raw.latitude,      raw.longitude,      raw.locationName,      raw.fcmTokens,      raw.createdAt,    );  }  async findByCode(code: string): Promise<Box | null> {    const box = await this.prisma.box.findUnique({ where: { code } });    return box ? this.toEntity(box) : null;  }  async findById(id: number): Promise<Box | null> {    const box = await this.prisma.box.findUnique({ where: { id } });    return box ? this.toEntity(box) : null;  }  async findByUserId(userId: string): Promise<Box[]> {    const boxes = await this.prisma.box.findMany({      where: { userId },      orderBy: { createdAt: 'asc' },    });    return boxes.map(this.toEntity);  }  async assignToUser(boxId: number, userId: string): Promise<Box> {    const box = await this.prisma.box.update({      where: { id: boxId },      data: { userId },    });    return this.toEntity(box);  }  async updateLocation(    boxId: number,    latitude: number,    longitude: number,    locationName: string,  ): Promise<Box> {    const box = await this.prisma.box.update({      where: { id: boxId },      data: { latitude, longitude, locationName },    });    return this.toEntity(box);  }  async addFcmToken(boxId: number, token: string): Promise<void> {    await this.prisma.box.update({      where: { id: boxId },      data: { fcmTokens: { push: token } },    });  }  async removeFcmToken(token: string): Promise<void> {    const boxes = await this.prisma.box.findMany({      where: { fcmTokens: { has: token } },    });    for (const box of boxes) {      await this.prisma.box.update({        where: { id: box.id },        data: { fcmTokens: { set: box.fcmTokens.filter(t => t !== token) } },      });    }  }  async getFcmTokens(boxId: number): Promise<string[]> {    const box = await this.prisma.box.findUnique({      where: { id: boxId },      select: { fcmTokens: true },    });    return box?.fcmTokens ?? [];  }}

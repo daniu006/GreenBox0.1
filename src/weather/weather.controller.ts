@@ -10,14 +10,10 @@ import {
 } from '@nestjs/common';
 import { FirebaseAuthGuard } from '../shared/guards/firebase-auth.guard';
 import { GetWeatherUseCase } from './usecases/get-weather.usecase';
-
 @Controller('weather')
 @UseGuards(FirebaseAuthGuard)
 export class WeatherController {
   constructor(private readonly getWeatherUseCase: GetWeatherUseCase) {}
-
-  // GET /weather/current?lat=-12.04&lon=-77.03&location=Lima
-  // Clima por coordenadas directas — el app manda las coords del Box
   @Get('current')
   async getCurrent(
     @Query('lat') latStr: string,
@@ -26,37 +22,28 @@ export class WeatherController {
   ) {
     const lat = parseFloat(latStr);
     const lon = parseFloat(lonStr);
-
     if (isNaN(lat) || isNaN(lon)) {
       throw new BadRequestException(
         'Los parámetros "lat" y "lon" son requeridos y deben ser números válidos',
       );
     }
-
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
       throw new BadRequestException('Coordenadas fuera de rango');
     }
-
     const weather = await this.getWeatherUseCase.execute(lat, lon, location);
-
     return {
       message: 'Clima obtenido exitosamente',
       data:    this.formatWeather(weather),
     };
   }
-
-  // GET /weather/box/:boxId
-  // Clima usando las coordenadas guardadas en el Box — más conveniente para el app
   @Get('box/:boxId')
   async getByBox(@Param('boxId', ParseIntPipe) boxId: number) {
     const weather = await this.getWeatherUseCase.executeByBoxId(boxId);
-
     return {
       message: 'Clima del Box obtenido exitosamente',
       data:    this.formatWeather(weather),
     };
   }
-
   private formatWeather(weather: any) {
     return {
       location:           weather.locationName,

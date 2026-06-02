@@ -1,12 +1,10 @@
 import { PlantPhoto, PhotoType } from './photo.entity';
-
 export interface CreatePhotoData {
   userPlantId: number;
   imageUrl:    string;
   type:        PhotoType;
   aiAnalysis?: Record<string, unknown> | null;
 }
-
 export interface IPhotoRepository {
   create(data: CreatePhotoData): Promise<PlantPhoto>;
   findByUserPlant(userPlantId: number): Promise<PlantPhoto[]>;
@@ -15,5 +13,4 @@ export interface IPhotoRepository {
   delete(id: number): Promise<void>;
   countByUserPlant(userPlantId: number): Promise<number>;
 }
-
 export const PHOTO_REPOSITORY = 'PHOTO_REPOSITORY';

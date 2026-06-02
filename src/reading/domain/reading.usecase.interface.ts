@@ -1,29 +1,1 @@
-import { Reading } from './reading.entity';
-import { CreateReadingDto } from '../reading.dto';
-
-export interface ReadingWithCommands {
-  reading: Reading;
-  commands: {
-    pump: boolean;
-  };
-}
-
-export interface PeriodReadings {
-  readings: Reading[];
-  peaks: {
-    temperature: { max: number; maxAt: Date; min: number; minAt: Date };
-    humidity: { max: number; maxAt: Date; min: number; minAt: Date };
-    soilMoisture: { max: number; maxAt: Date; min: number; minAt: Date };
-    waterLevel: { max: number; maxAt: Date; min: number; minAt: Date };
-  };
-}
-
-export interface IReadingUseCase {
-  create(dto: CreateReadingDto): Promise<ReadingWithCommands>;
-  getLatest(userPlantId: number): Promise<Reading | null>;
-  getByDay(userPlantId: number, date: Date): Promise<PeriodReadings>;
-  getByWeek(userPlantId: number, startDate: Date): Promise<PeriodReadings>;
-  getByMonth(userPlantId: number, year: number, month: number): Promise<PeriodReadings>;
-}
-
-export const READING_USE_CASE = 'READING_USE_CASE';
+import { Reading } from './reading.entity';import { CreateReadingDto } from '../reading.dto';export interface ReadingWithCommands {  reading: Reading;  commands: {    pump: boolean;  };}export interface PeriodReadings {  readings: Reading[];  peaks: {    temperature: { max: number; maxAt: Date; min: number; minAt: Date };    humidity: { max: number; maxAt: Date; min: number; minAt: Date };    soilMoisture: { max: number; maxAt: Date; min: number; minAt: Date };    waterLevel: { max: number; maxAt: Date; min: number; minAt: Date };  };}export interface IReadingUseCase {  create(dto: CreateReadingDto): Promise<ReadingWithCommands>;  getLatest(userPlantId: number): Promise<Reading | null>;  getByDay(userPlantId: number, date: Date): Promise<PeriodReadings>;  getByWeek(userPlantId: number, startDate: Date): Promise<PeriodReadings>;  getByMonth(userPlantId: number, year: number, month: number): Promise<PeriodReadings>;}export const READING_USE_CASE = 'READING_USE_CASE';

@@ -8,7 +8,6 @@ import { GetTimelineUseCase } from './usecases/get-timeline.usecase';
 import { PhotoPrismaRepository } from './photo.repository';
 import { CloudinaryService } from './firebase-storage.service';
 import { PHOTO_REPOSITORY } from './domain/photo.repository.interface';
-
 @Module({
   imports: [
     MulterModule.register({

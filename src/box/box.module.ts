@@ -7,18 +7,14 @@ import { GetBoxesByUserUseCase } from './usecases/assign-box.usecase';
 import { BoxPrismaRepository } from './box.repository';
 import { BOX_REPOSITORY } from './domain/box.repository.interface';
 import { PrismaModule } from 'src/shared/prisma/prisma.module';
-
 @Module({
   imports: [PrismaModule],
   controllers: [BoxController],
   providers: [
-    // Casos de uso
     ValidateCodeUseCase,
     UpdateLocationUseCase,
     RegisterFcmTokenUseCase,
     GetBoxesByUserUseCase,
-
-    // Repositorio — permite cambiar de ORM sin tocar los casos de uso
     {
       provide: BOX_REPOSITORY,
       useClass: BoxPrismaRepository,

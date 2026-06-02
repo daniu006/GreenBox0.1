@@ -1,18 +1,1 @@
-import { IsNumber, IsString, IsIn, IsNotEmpty, Min } from 'class-validator';
-import { ALERT_TYPES } from './domain/alert.entity';
-
-export class CreateAlertDto {
-  @IsNumber()
-  @Min(1)
-  userPlantId: number;
-
-  @IsString()
-  @IsIn(ALERT_TYPES, {
-    message: `El tipo debe ser uno de: ${ALERT_TYPES.join(', ')}`,
-  })
-  type: string;
-
-  @IsString()
-  @IsNotEmpty({ message: 'El mensaje es obligatorio' })
-  message: string;
-}
+import { IsNumber, IsString, IsIn, IsNotEmpty, Min } from 'class-validator';import { ALERT_TYPES } from './domain/alert.entity';export class CreateAlertDto {  @IsNumber()  @Min(1)  userPlantId: number;  @IsString()  @IsIn(ALERT_TYPES, {    message: `El tipo debe ser uno de: ${ALERT_TYPES.join(', ')}`,  })  type: string;  @IsString()  @IsNotEmpty({ message: 'El mensaje es obligatorio' })  message: string;}

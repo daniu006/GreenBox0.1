@@ -15,7 +15,6 @@ import { StatisticModule } from './statistic/statistic.module';
 import { PhotoModule } from './photo/photo.module';
 import { WeatherModule } from './weather/weather.module';
 import { NotificationsModule } from './notifications/notifications.module';
-
 @Module({
   imports: [
     PrismaModule,

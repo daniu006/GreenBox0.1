@@ -1,12 +1,1 @@
-import { Alert } from './alert.entity';
-
-export interface IAlertUseCase {
-  create(userPlantId: number, type: string, message: string): Promise<Alert | null>;
-  getActive(userPlantId: number): Promise<Alert[]>;
-  getAll(userPlantId: number): Promise<Alert[]>;
-  resolve(id: number, userId: string): Promise<Alert>;
-  resolveAll(userPlantId: number, userId: string): Promise<void>;
-  delete(id: number, userId: string): Promise<void>;
-}
-
-export const ALERT_USE_CASE = 'ALERT_USE_CASE';
+import { Alert } from './alert.entity';export interface IAlertUseCase {  create(userPlantId: number, type: string, message: string): Promise<Alert | null>;  getActive(userPlantId: number): Promise<Alert[]>;  getAll(userPlantId: number): Promise<Alert[]>;  resolve(id: number, userId: string): Promise<Alert>;  resolveAll(userPlantId: number, userId: string): Promise<void>;  delete(id: number, userId: string): Promise<void>;}export const ALERT_USE_CASE = 'ALERT_USE_CASE';

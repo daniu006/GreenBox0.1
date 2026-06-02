@@ -15,8 +15,6 @@ export class PlantController {
     private readonly plantRepository: PlantPrismaRepository,
   ) {}
 
-  // GET /plant — catálogo completo agrupado por categoría
-  // Los usuarios autenticados leen el catálogo para seleccionar su planta
   @Get()
   @UseGuards(FirebaseAuthGuard)
   async getAll() {
@@ -27,7 +25,6 @@ export class PlantController {
     };
   }
 
-  // GET /plant/category/:category — plantas por categoría (taxonomía híbrida)
   @Get('category/:category')
   @UseGuards(FirebaseAuthGuard)
   async getByCategory(@Param('category') category: string) {
@@ -39,7 +36,6 @@ export class PlantController {
     };
   }
 
-  // GET /plant/:id — detalle de una planta con sus parámetros óptimos
   @Get(':id')
   @UseGuards(FirebaseAuthGuard)
   async getOne(@Param('id', ParseIntPipe) id: number) {
@@ -50,12 +46,8 @@ export class PlantController {
     };
   }
 
-  // ─── Rutas de administración ───────────────────────────
-  // Solo para agregar/editar plantas del catálogo desde el backend
-  // En producción estas rutas deberían tener un guard de admin
-
-  // POST /plant
   @Post()
+  @UseGuards(FirebaseAuthGuard)
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreatePlantDto) {
     const plant = await this.plantRepository.create(dto);
@@ -65,8 +57,8 @@ export class PlantController {
     };
   }
 
-  // PATCH /plant/:id
   @Patch(':id')
+  @UseGuards(FirebaseAuthGuard)
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UpdatePlantDto,
@@ -82,8 +74,8 @@ export class PlantController {
     };
   }
 
-  // DELETE /plant/:id
   @Delete(':id')
+  @UseGuards(FirebaseAuthGuard)
   async remove(@Param('id', ParseIntPipe) id: number) {
     await this.plantRepository.delete(id);
     return { message: 'Planta eliminada exitosamente' };

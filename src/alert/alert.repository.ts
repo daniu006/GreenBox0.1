@@ -1,72 +1,1 @@
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { IAlertRepository, CreateAlertData } from './domain/alert.repository.interface';
-import { Alert } from './domain/alert.entity';
-
-@Injectable()
-export class AlertPrismaRepository implements IAlertRepository {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private toEntity(raw: any): Alert {
-    return new Alert(
-      raw.id,
-      raw.userPlantId,
-      raw.type,
-      raw.message,
-      raw.resolved,
-      raw.createdAt,
-    );
-  }
-
-  async create(data: CreateAlertData): Promise<Alert> {
-    const alert = await this.prisma.alert.create({ data });
-    return this.toEntity(alert);
-  }
-
-  async findActive(userPlantId: number): Promise<Alert[]> {
-    const alerts = await this.prisma.alert.findMany({
-      where: { userPlantId, resolved: false },
-      orderBy: { createdAt: 'desc' },
-    });
-    return alerts.map(a => this.toEntity(a));
-  }
-
-  async findAll(userPlantId: number): Promise<Alert[]> {
-    const alerts = await this.prisma.alert.findMany({
-      where: { userPlantId },
-      orderBy: { createdAt: 'desc' },
-    });
-    return alerts.map(a => this.toEntity(a));
-  }
-
-  async findById(id: number): Promise<Alert | null> {
-    const alert = await this.prisma.alert.findUnique({ where: { id } });
-    return alert ? this.toEntity(alert) : null;
-  }
-
-  async findUnresolved(userPlantId: number, type: string): Promise<Alert | null> {
-    const alert = await this.prisma.alert.findFirst({
-      where: { userPlantId, type, resolved: false },
-    });
-    return alert ? this.toEntity(alert) : null;
-  }
-
-  async resolve(id: number): Promise<Alert> {
-    const alert = await this.prisma.alert.update({
-      where: { id },
-      data: { resolved: true },
-    });
-    return this.toEntity(alert);
-  }
-
-  async resolveAll(userPlantId: number): Promise<void> {
-    await this.prisma.alert.updateMany({
-      where: { userPlantId, resolved: false },
-      data: { resolved: true },
-    });
-  }
-
-  async delete(id: number): Promise<void> {
-    await this.prisma.alert.delete({ where: { id } });
-  }
-}
+import { Injectable } from '@nestjs/common';import { PrismaService } from 'src/shared/prisma/prisma.service';import { IAlertRepository, CreateAlertData } from './domain/alert.repository.interface';import { Alert } from './domain/alert.entity';@Injectable()export class AlertPrismaRepository implements IAlertRepository {  constructor(private readonly prisma: PrismaService) {}  private toEntity(raw: any): Alert {    return new Alert(      raw.id,      raw.userPlantId,      raw.type,      raw.message,      raw.resolved,      raw.createdAt,    );  }  async create(data: CreateAlertData): Promise<Alert> {    const alert = await this.prisma.alert.create({ data });    return this.toEntity(alert);  }  async findActive(userPlantId: number): Promise<Alert[]> {    const alerts = await this.prisma.alert.findMany({      where: { userPlantId, resolved: false },      orderBy: { createdAt: 'desc' },    });    return alerts.map(a => this.toEntity(a));  }  async findAll(userPlantId: number): Promise<Alert[]> {    const alerts = await this.prisma.alert.findMany({      where: { userPlantId },      orderBy: { createdAt: 'desc' },    });    return alerts.map(a => this.toEntity(a));  }  async findById(id: number): Promise<Alert | null> {    const alert = await this.prisma.alert.findUnique({ where: { id } });    return alert ? this.toEntity(alert) : null;  }  async findUnresolved(userPlantId: number, type: string): Promise<Alert | null> {    const alert = await this.prisma.alert.findFirst({      where: { userPlantId, type, resolved: false },    });    return alert ? this.toEntity(alert) : null;  }  async resolve(id: number): Promise<Alert> {    const alert = await this.prisma.alert.update({      where: { id },      data: { resolved: true },    });    return this.toEntity(alert);  }  async resolveAll(userPlantId: number): Promise<void> {    await this.prisma.alert.updateMany({      where: { userPlantId, resolved: false },      data: { resolved: true },    });  }  async delete(id: number): Promise<void> {    await this.prisma.alert.delete({ where: { id } });  }}

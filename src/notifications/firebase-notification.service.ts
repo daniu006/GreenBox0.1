@@ -1,10 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as admin from 'firebase-admin';
-
 @Injectable()
 export class FirebaseNotificationService {
   private readonly logger = new Logger(FirebaseNotificationService.name);
-
   async sendPushNotification(
     token: string,
     title: string,
@@ -15,7 +13,6 @@ export class FirebaseNotificationService {
       if (admin.apps.length === 0) {
         admin.initializeApp();
       }
-
       await admin.messaging().send({
         token,
         notification: {

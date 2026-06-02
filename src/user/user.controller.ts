@@ -4,7 +4,6 @@ import { CurrentUser, CurrentUserPayload } from '../shared/decorators/current-us
 import { GetUserUseCase } from './usecases/get-user.usecase';
 import { UpdateUserUseCase } from './usecases/update-user.usecase';
 import { UpdateUserDto } from './user.dto';
-
 @Controller('user')
 @UseGuards(FirebaseAuthGuard)
 export class UserController {
@@ -12,13 +11,11 @@ export class UserController {
     private readonly getUserUseCase:    GetUserUseCase,
     private readonly updateUserUseCase: UpdateUserUseCase,
   ) {}
-
   @Get('me')
   async getMe(@CurrentUser() user: CurrentUserPayload) {
     const data = await this.getUserUseCase.execute(user.uid);
     return { message: 'Perfil obtenido', data };
   }
-
   @Patch('me')
   async updateMe(
     @CurrentUser() user: CurrentUserPayload,

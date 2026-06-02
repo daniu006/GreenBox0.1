@@ -1,21 +1,1 @@
-import { Statistic } from './statistic.entity';
-
-export interface UpsertStatisticData {
-  userPlantId: number;
-  week: number;
-  avgTemperature: number;
-  avgHumidity: number;
-  avgLightHours: number;
-  avgWaterLevel: number;
-  avgSoilMoisture: number;
-  estimatedHealth: number;
-}
-
-export interface IStatisticRepository {
-  upsert(data: UpsertStatisticData): Promise<Statistic>;
-  findLatest(userPlantId: number): Promise<Statistic | null>;
-  findByWeek(userPlantId: number, week: number): Promise<Statistic | null>;
-  findAll(userPlantId: number): Promise<Statistic[]>;
-}
-
-export const STATISTIC_REPOSITORY = 'STATISTIC_REPOSITORY';
+import { Statistic } from './statistic.entity';export interface UpsertStatisticData {  userPlantId: number;  week: number;  avgTemperature: number;  avgHumidity: number;  avgLightHours: number;  avgWaterLevel: number;  avgSoilMoisture: number;  estimatedHealth: number;}export interface IStatisticRepository {  upsert(data: UpsertStatisticData): Promise<Statistic>;  findLatest(userPlantId: number): Promise<Statistic | null>;  findByWeek(userPlantId: number, week: number): Promise<Statistic | null>;  findAll(userPlantId: number): Promise<Statistic[]>;}export const STATISTIC_REPOSITORY = 'STATISTIC_REPOSITORY';

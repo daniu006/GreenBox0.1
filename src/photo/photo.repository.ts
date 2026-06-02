@@ -7,11 +7,9 @@ import {
   PHOTO_REPOSITORY,
 } from './domain/photo.repository.interface';
 import { PlantPhoto, PlantAiAnalysis } from './domain/photo.entity';
-
 @Injectable()
 export class PhotoPrismaRepository implements IPhotoRepository {
   constructor(private readonly prisma: PrismaService) {}
-
   private toEntity(raw: any): PlantPhoto {
     return new PlantPhoto(
       raw.id,
@@ -22,7 +20,6 @@ export class PhotoPrismaRepository implements IPhotoRepository {
       raw.takenAt,
     );
   }
-
   async create(data: CreatePhotoData): Promise<PlantPhoto> {
     const photo = await this.prisma.plantPhoto.create({
       data: {
@@ -36,7 +33,6 @@ export class PhotoPrismaRepository implements IPhotoRepository {
     });
     return this.toEntity(photo);
   }
-
   async findByUserPlant(userPlantId: number): Promise<PlantPhoto[]> {
     const photos = await this.prisma.plantPhoto.findMany({
       where: { userPlantId },
@@ -44,12 +40,10 @@ export class PhotoPrismaRepository implements IPhotoRepository {
     });
     return photos.map(p => this.toEntity(p));
   }
-
   async findById(id: number): Promise<PlantPhoto | null> {
     const photo = await this.prisma.plantPhoto.findUnique({ where: { id } });
     return photo ? this.toEntity(photo) : null;
   }
-
   async updateAnalysis(
     id: number,
     analysis: Record<string, unknown>,
@@ -60,11 +54,9 @@ export class PhotoPrismaRepository implements IPhotoRepository {
     });
     return this.toEntity(photo);
   }
-
   async delete(id: number): Promise<void> {
     await this.prisma.plantPhoto.delete({ where: { id } });
   }
-
   async countByUserPlant(userPlantId: number): Promise<number> {
     return this.prisma.plantPhoto.count({ where: { userPlantId } });
   }

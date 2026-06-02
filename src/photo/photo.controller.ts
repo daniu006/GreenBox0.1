@@ -21,7 +21,6 @@ import { CurrentUser, CurrentUserPayload } from '../shared/decorators/current-us
 import { UploadPhotoUseCase } from './usecases/upload-photo.usecase';
 import { AnalyzePhotoUseCase } from './usecases/analyze-photo.usecase';
 import { GetTimelineUseCase } from './usecases/get-timeline.usecase';
-
 @Controller('photo')
 @UseGuards(FirebaseAuthGuard)
 export class PhotoController {
@@ -30,14 +29,11 @@ export class PhotoController {
     private readonly analyzePhotoUseCase:  AnalyzePhotoUseCase,
     private readonly getTimelineUseCase:   GetTimelineUseCase,
   ) {}
-
-  // POST /photo/:userPlantId/upload?type=initial|report
-  // Sube una foto de la planta — multipart/form-data con campo "file"
   @Post(':userPlantId/upload')
   @UseInterceptors(
     FileInterceptor('file', {
-      storage: memoryStorage(), // buffer en memoria, Cloudinary recibe el buffer
-      limits:  { fileSize: 10 * 1024 * 1024 }, // máximo 10MB
+      storage: memoryStorage(), 
+      limits:  { fileSize: 10 * 1024 * 1024 }, 
       fileFilter: (_req, file, cb) => {
         const allowed = ['image/jpeg', 'image/png', 'image/webp'];
         if (!allowed.includes(file.mimetype)) {
@@ -58,23 +54,17 @@ export class PhotoController {
     if (!file) {
       throw new BadRequestException('Se requiere un archivo de imagen (campo "file")');
     }
-
     const photoType = type === 'initial' ? 'initial' : 'report';
-
     const photo = await this.uploadPhotoUseCase.execute(
       userPlantId,
       file,
       photoType,
     );
-
     return {
       message: 'Foto subida exitosamente',
       data:    this.formatPhoto(photo),
     };
   }
-
-  // POST /photo/:id/analyze
-  // Dispara el análisis de IA de una foto existente — resultado guardado en BD
   @Post(':id/analyze')
   @HttpCode(HttpStatus.OK)
   async analyze(@Param('id', ParseIntPipe) id: number) {
@@ -84,9 +74,6 @@ export class PhotoController {
       data:    analysis,
     };
   }
-
-  // GET /photo/:userPlantId/timeline
-  // Línea de tiempo visual de fotos de la planta
   @Get(':userPlantId/timeline')
   async getTimeline(
     @Param('userPlantId', ParseIntPipe) userPlantId: number,
@@ -98,7 +85,6 @@ export class PhotoController {
       total:   photos.length,
     };
   }
-
   private formatPhoto(photo: any) {
     return {
       id:           photo.id,

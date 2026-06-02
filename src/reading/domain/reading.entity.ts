@@ -1,12 +1,1 @@
-export class Reading {
-  constructor(
-    public readonly id: number,
-    public readonly userPlantId: number,
-    public readonly temperature: number,
-    public readonly humidity: number,
-    public readonly soilMoisture: number,
-    public readonly lightHours: number,
-    public readonly waterLevel: number,
-    public readonly timestamp: Date,
-  ) {}
-}
+export class Reading {  constructor(    public readonly id: number,    public readonly userPlantId: number,    public readonly temperature: number,    public readonly humidity: number,    public readonly soilMoisture: number,    public readonly lightHours: number,    public readonly waterLevel: number,    public readonly timestamp: Date,  ) {}}

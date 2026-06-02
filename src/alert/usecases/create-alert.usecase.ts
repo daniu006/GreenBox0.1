@@ -1,75 +1,1 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
-import { IAlertRepository, ALERT_REPOSITORY } from '../domain/alert.repository.interface';
-import { Alert, ALERT_TYPES } from '../domain/alert.entity';
-import { FirebaseNotificationService } from 'src/notifications/firebase-notification.service';
-import { PrismaService } from 'src/shared/prisma/prisma.service';
-
-@Injectable()
-export class CreateAlertUseCase {
-  private readonly logger = new Logger(CreateAlertUseCase.name);
-
-  constructor(
-    @Inject(ALERT_REPOSITORY)
-    private readonly alertRepository: IAlertRepository,
-    private readonly prisma: PrismaService,
-    private readonly firebaseNotification: FirebaseNotificationService,
-  ) {}
-
-  async execute(
-    userPlantId: number,
-    type: string,
-    message: string,
-  ): Promise<Alert | null> {
-    // 1. Validar tipo — solo tipos definidos en el backend son válidos
-    if (!ALERT_TYPES.includes(type as any)) {
-      this.logger.warn(`Tipo de alerta inválido: ${type}`);
-      return null;
-    }
-
-    // 2. Evitar duplicados — no crear alerta si ya hay una no resuelta del mismo tipo
-    const existing = await this.alertRepository.findUnresolved(userPlantId, type);
-    if (existing) {
-      return null;
-    }
-
-    // 3. Crear la alerta
-    const alert = await this.alertRepository.create({ userPlantId, type, message });
-
-    // 4. Enviar notificación push a todos los dispositivos del usuario
-    await this.sendPushNotification(userPlantId, alert);
-
-    return alert;
-  }
-
-  private async sendPushNotification(userPlantId: number, alert: Alert): Promise<void> {
-    try {
-      // Obtener los tokens FCM del box asociado al userPlant
-      const userPlant = await this.prisma.userPlant.findUnique({
-        where: { id: userPlantId },
-        include: {
-          box: { select: { fcmTokens: true } },
-          plant: { select: { name: true } },
-        },
-      });
-
-      if (!userPlant?.box?.fcmTokens?.length) return;
-
-      const plantName = userPlant.plant?.name ?? 'Tu planta';
-      const title = `⚠️ Alerta: ${alert.typeLabel()}`;
-      const body = `${plantName} — ${alert.message}`;
-
-      await Promise.all(
-        userPlant.box.fcmTokens.map(token =>
-          this.firebaseNotification.sendPushNotification(token, title, body, {
-            userPlantId: userPlantId.toString(),
-            alertId: alert.id.toString(),
-            type: alert.type,
-            priority: alert.priority(),
-          }),
-        ),
-      );
-    } catch (error) {
-      this.logger.error('Error enviando notificación push', error);
-    }
-  }
-}
+import { Inject, Injectable, Logger } from '@nestjs/common';import { IAlertRepository, ALERT_REPOSITORY } from '../domain/alert.repository.interface';import { Alert, ALERT_TYPES } from '../domain/alert.entity';import { FirebaseNotificationService } from 'src/notifications/firebase-notification.service';import { PrismaService } from 'src/shared/prisma/prisma.service';@Injectable()export class CreateAlertUseCase {  private readonly logger = new Logger(CreateAlertUseCase.name);  constructor(    @Inject(ALERT_REPOSITORY)    private readonly alertRepository: IAlertRepository,    private readonly prisma: PrismaService,    private readonly firebaseNotification: FirebaseNotificationService,  ) {}  async execute(    userPlantId: number,    type: string,    message: string,  ): Promise<Alert | null> {        if (!ALERT_TYPES.includes(type as any)) {      this.logger.warn(`Tipo de alerta inválido: ${type}`);      return null;    }        const existing = await this.alertRepository.findUnresolved(userPlantId, type);    if (existing) {      return null;    }        const alert = await this.alertRepository.create({ userPlantId, type, message });        await this.sendPushNotification(userPlantId, alert);    return alert;  }  private async sendPushNotification(userPlantId: number, alert: Alert): Promise<void> {    try {            const userPlant = await this.prisma.userPlant.findUnique({        where: { id: userPlantId },        include: {          box: { select: { fcmTokens: true } },          plant: { select: { name: true } },        },      });      if (!userPlant?.box?.fcmTokens?.length) return;      const plantName = userPlant.plant?.name ?? 'Tu planta';      const title = `⚠️ Alerta: ${alert.typeLabel()}`;      const body = `${plantName} — ${alert.message}`;      await Promise.all(        userPlant.box.fcmTokens.map(token =>          this.firebaseNotification.sendPushNotification(token, title, body, {            userPlantId: userPlantId.toString(),            alertId: alert.id.toString(),            type: alert.type,            priority: alert.priority(),          }),        ),      );    } catch (error) {      this.logger.error('Error enviando notificación push', error);    }  }}
