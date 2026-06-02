@@ -1,0 +1,35 @@
+export class UserPlant {
+  constructor(
+    public readonly id: number,
+    public readonly userId: string,
+    public readonly boxId: number,
+    public readonly plantId: number,
+    public readonly nickname: string | null,
+    public readonly status: string,
+    public readonly startedAt: Date,
+    public readonly archivedAt: Date | null,
+    public readonly createdAt: Date,
+    public readonly plant?: {
+      id: number;
+      name: string;
+      category: string;
+      imageUrl: string | null;
+      minTemperature: number;
+      maxTemperature: number;
+      minHumidity: number;
+      maxHumidity: number;
+      lightHours: number;
+      minWaterLevel: number;
+      minSoilMoisture: number | null;
+      wateringFrequency: number;
+    },
+  ) {}
+
+  isActive(): boolean {
+    return this.archivedAt === null;
+  }
+
+  displayName(): string {
+    return this.nickname ?? this.plant?.name ?? 'Mi planta';
+  }
+}

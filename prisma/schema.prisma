@@ -1,0 +1,180 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+
+}
+
+
+model User {
+  id         String      @id                    // Firebase UID
+  email      String      @unique
+  password   String                             // hash bcrypt (si usas email/pass propio)
+  name       String
+  createdAt  DateTime    @default(now())
+
+  boxes      Box[]
+  userPlants UserPlant[]
+
+  @@map("users")
+}
+
+
+model Box {
+  id           Int       @id @default(autoincrement())
+  code         String    @unique
+  userId       String?
+  latitude     Float?
+  longitude    Float?
+  locationName String?
+  fcmTokens    String[]  @default([])
+  createdAt    DateTime  @default(now())
+
+  user         User?       @relation(fields: [userId], references: [id])
+  userPlants   UserPlant[]
+
+  @@index([userId])
+  @@map("boxes")
+}
+
+
+model Plant {
+  id                Int         @id @default(autoincrement())
+  name              String
+  category          String      // interior | comestible | ornamental | suculenta | arbol
+  imageUrl          String?
+  minTemperature    Float
+  maxTemperature    Float
+  minHumidity       Float
+  maxHumidity       Float
+  lightHours        Float
+  minWaterLevel     Float
+  minSoilMoisture   Float?
+  wateringFrequency Float
+  createdAt         DateTime    @default(now())
+
+  userPlants        UserPlant[]
+  
+  @@map("plants")
+}
+
+
+model UserPlant {
+  id          Int       @id @default(autoincrement())
+  userId      String
+  boxId       Int
+  plantId     Int
+  nickname    String?                         // nombre que le pone el usuario
+  status      String    @default("active")    // active | archived
+  startedAt   DateTime  @default(now())       // cuando el usuario empezó con esta planta
+  archivedAt  DateTime?                       // null = activa, fecha = archivada
+  createdAt   DateTime  @default(now())
+
+  user        User        @relation(fields: [userId], references: [id])
+  box         Box         @relation(fields: [boxId], references: [id])
+  plant       Plant       @relation(fields: [plantId], references: [id])
+
+  readings    Reading[]
+  histories   History[]
+  statistics  Statistic[]
+  alerts      Alert[]
+  photos      PlantPhoto[]
+
+  @@index([userId])
+  @@index([boxId])
+  @@index([plantId])
+  @@map("user_plants")
+}
+
+
+model Reading {
+  id           Int       @id @default(autoincrement())
+  userPlantId  Int
+  temperature  Float
+  humidity     Float
+  soilMoisture Float     @default(0)
+  lightHours   Float
+  waterLevel   Float
+  timestamp    DateTime  @default(now())
+
+  userPlant    UserPlant @relation(fields: [userPlantId], references: [id], onDelete: Cascade)
+
+  @@index([userPlantId])
+  @@index([timestamp])
+  @@map("readings")
+}
+
+
+model History {
+  id              Int       @id @default(autoincrement())
+  userPlantId     Int
+  type            String                        // daily | weekly | monthly
+  week            Int
+  temperature     Float
+  humidity        Float
+  soilMoisture    Float     @default(0)
+  lightHours      Float
+  waterLevel      Float
+  estimatedHealth Float
+  date            DateTime  @default(now())
+
+  userPlant       UserPlant @relation(fields: [userPlantId], references: [id], onDelete: Cascade)
+
+  @@index([userPlantId, date])
+  @@map("histories")
+}
+
+
+model Statistic {
+  id              Int       @id @default(autoincrement())
+  userPlantId     Int
+  week            Int
+  avgTemperature  Float
+  avgHumidity     Float
+  avgLightHours   Float
+  avgWaterLevel   Float
+  avgSoilMoisture Float     @default(0)
+  estimatedHealth Float
+  generatedAt     DateTime  @default(now())
+
+  userPlant       UserPlant @relation(fields: [userPlantId], references: [id], onDelete: Cascade)
+
+  @@unique([userPlantId, week])
+  @@index([userPlantId])
+  @@map("statistics")
+}
+
+
+model Alert {
+  id          Int       @id @default(autoincrement())
+  userPlantId Int
+  type        String    // temperature | humidity | water | soilMoisture | light
+  message     String
+  resolved    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  userPlant   UserPlant @relation(fields: [userPlantId], references: [id], onDelete: Cascade)
+
+  @@index([userPlantId])
+  @@index([resolved])
+  @@map("alerts")
+}
+
+
+model PlantPhoto {
+  id          Int       @id @default(autoincrement())
+  userPlantId Int
+  imageUrl    String
+  type        String                    // initial | report
+  aiAnalysis  Json?                     // análisis de IA guardado como JSON
+  takenAt     DateTime  @default(now())
+
+  userPlant   UserPlant @relation(fields: [userPlantId], references: [id], onDelete: Cascade)
+
+  @@index([userPlantId])
+  @@map("plant_photos")
+}
+

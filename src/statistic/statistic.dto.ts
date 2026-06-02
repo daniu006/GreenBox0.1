@@ -1,0 +1,20 @@
+import { IsNumber, IsOptional, Min, Max } from 'class-validator';
+
+export class GetStatisticByWeekDto {
+  @IsNumber({}, { message: 'La semana debe ser un número' })
+  @Min(1, { message: 'La semana mínima es 1' })
+  @Max(53, { message: 'La semana máxima es 53' })
+  week: number;
+}
+
+export class GetStatisticsByUserPlantDto {
+  @IsNumber({}, { message: 'El id de la planta debe ser un número' })
+  @Min(1)
+  userPlantId: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(53)
+  week?: number;
+}

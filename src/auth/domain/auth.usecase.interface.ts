@@ -1,0 +1,23 @@
+import { RegisterDto } from '../auth.dto';
+import { LoginDto } from '../auth.dto';
+
+export interface RegisterResult {
+  uid: string;
+  email: string;
+  name: string;
+  token: string;
+}
+
+export interface LoginResult {
+  uid: string;
+  email: string;
+  name: string;
+  token: string;
+}
+
+export interface IAuthUseCase {
+  register(dto: RegisterDto): Promise<RegisterResult>;
+  login(dto: LoginDto): Promise<LoginResult>;
+}
+
+export const AUTH_USE_CASE = 'AUTH_USE_CASE';

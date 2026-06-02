@@ -1,0 +1,20 @@
+import { Alert } from './alert.entity';
+
+export interface CreateAlertData {
+  userPlantId: number;
+  type: string;
+  message: string;
+}
+
+export interface IAlertRepository {
+  create(data: CreateAlertData): Promise<Alert>;
+  findActive(userPlantId: number): Promise<Alert[]>;
+  findAll(userPlantId: number): Promise<Alert[]>;
+  findById(id: number): Promise<Alert | null>;
+  findUnresolved(userPlantId: number, type: string): Promise<Alert | null>;
+  resolve(id: number): Promise<Alert>;
+  resolveAll(userPlantId: number): Promise<void>;
+  delete(id: number): Promise<void>;
+}
+
+export const ALERT_REPOSITORY = 'ALERT_REPOSITORY';

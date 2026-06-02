@@ -1,0 +1,64 @@
+import { Controller,Get,Post,Param,Query,ParseIntPipe,UseGuards,} from '@nestjs/common';
+import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
+import { CalculateStatisticsUseCase } from './usecases/calculate-statistics.usecase';
+import { GetStatisticsByPeriodUseCase } from './usecases/get-statistics-by-period.usecase';
+
+@Controller('statistic')
+@UseGuards(FirebaseAuthGuard)
+export class StatisticController {
+  constructor(
+    private readonly calculateUseCase: CalculateStatisticsUseCase,
+    private readonly getUseCase: GetStatisticsByPeriodUseCase,
+  ) {}
+
+  // GET /statistic/:userPlantId/latest — estadística más reciente para el home
+  @Get(':userPlantId/latest')
+  async getLatest(@Param('userPlantId', ParseIntPipe) userPlantId: number) {
+    const statistic = await this.getUseCase.getLatest(userPlantId);
+    return {
+      message: 'Estadística más reciente obtenida',
+      data: statistic
+        ? { ...statistic, healthLabel: statistic.healthLabel() }
+        : null,
+    };
+  }
+
+  // GET /statistic/:userPlantId — todas las estadísticas históricas
+  @Get(':userPlantId')
+  async getAll(@Param('userPlantId', ParseIntPipe) userPlantId: number) {
+    const statistics = await this.getUseCase.getAll(userPlantId);
+    return {
+      message: 'Estadísticas obtenidas exitosamente',
+      data: statistics.map(s => ({ ...s, healthLabel: s.healthLabel() })),
+      total: statistics.length,
+    };
+  }
+
+  // GET /statistic/:userPlantId/week?week=22 — estadística de una semana específica
+  @Get(':userPlantId/week')
+  async getByWeek(
+    @Param('userPlantId', ParseIntPipe) userPlantId: number,
+    @Query('week', ParseIntPipe) week: number,
+  ) {
+    const statistic = await this.getUseCase.getByWeek(userPlantId, week);
+    return {
+      message: `Estadística de la semana ${week} obtenida`,
+      data: statistic
+        ? { ...statistic, healthLabel: statistic.healthLabel() }
+        : null,
+    };
+  }
+
+  // POST /statistic/:userPlantId/calculate — dispara cálculo manual
+  // Normalmente se llama automáticamente desde CreateReadingUseCase
+  @Post(':userPlantId/calculate')
+  async calculate(@Param('userPlantId', ParseIntPipe) userPlantId: number) {
+    const statistic = await this.calculateUseCase.execute(userPlantId);
+    return {
+      message: 'Estadísticas calculadas exitosamente',
+      data: statistic
+        ? { ...statistic, healthLabel: statistic.healthLabel() }
+        : null,
+    };
+  }
+}

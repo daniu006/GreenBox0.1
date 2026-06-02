@@ -1,0 +1,79 @@
+import { Inject, Injectable, BadRequestException } from '@nestjs/common';
+import { IHistoryRepository, HISTORY_REPOSITORY } from '../domain/history.repository.interface';
+import { History, HistoryType, HISTORY_TYPES } from '../domain/history.entity';
+import { HistoryWithPeaks } from '../domain/history.usecase.interface';
+
+@Injectable()
+export class GetHistoryByPeriodUseCase {
+  constructor(
+    @Inject(HISTORY_REPOSITORY)
+    private readonly historyRepository: IHistoryRepository,
+  ) {}
+
+  async execute(
+    userPlantId: number,
+    period: string,
+    dateStr?: string,
+  ): Promise<HistoryWithPeaks> {
+    // Período validado en backend — nunca se confía en el frontend
+    if (!HISTORY_TYPES.includes(period as HistoryType)) {
+      throw new BadRequestException(
+        `Período inválido. Use: ${HISTORY_TYPES.join(', ')}`,
+      );
+    }
+
+    const refDate = dateStr ? new Date(dateStr) : new Date();
+    let records: History[] = [];
+
+    if (period === 'daily') {
+      records = await this.historyRepository.findByDay(userPlantId, refDate);
+    } else if (period === 'weekly') {
+      const week = this.getWeekNumber(refDate);
+      records = await this.historyRepository.findByWeek(userPlantId, week);
+    } else if (period === 'monthly') {
+      records = await this.historyRepository.findByMonth(
+        userPlantId,
+        refDate.getFullYear(),
+        refDate.getMonth() + 1,
+      );
+    }
+
+    return {
+      records,
+      peaks: this.calculatePeaks(records),
+    };
+  }
+
+  // Calcula picos con timestamp — se muestran debajo de la gráfica lineal
+  private calculatePeaks(records: History[]) {
+    if (records.length === 0) {
+      const empty = { max: 0, maxAt: new Date(), min: 0, minAt: new Date() };
+      return { temperature: empty, humidity: empty, health: empty };
+    }
+
+    const findPeaks = (getValue: (r: History) => number) => {
+      const maxR = records.reduce((a, b) => getValue(a) > getValue(b) ? a : b);
+      const minR = records.reduce((a, b) => getValue(a) < getValue(b) ? a : b);
+      return {
+        max: parseFloat(getValue(maxR).toFixed(2)),
+        maxAt: maxR.date,
+        min: parseFloat(getValue(minR).toFixed(2)),
+        minAt: minR.date,
+      };
+    };
+
+    return {
+      temperature: findPeaks(r => r.temperature),
+      humidity:    findPeaks(r => r.humidity),
+      health:      findPeaks(r => r.estimatedHealth),
+    };
+  }
+
+  private getWeekNumber(date: Date): number {
+    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+  }
+}

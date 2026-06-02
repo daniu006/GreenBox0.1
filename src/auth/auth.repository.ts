@@ -1,0 +1,54 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { IAuthRepository } from './domain/auth.repository.interface';
+import { AuthUser } from './domain/auth.entity';
+
+@Injectable()
+export class AuthPrismaRepository implements IAuthRepository {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async findByEmail(email: string): Promise<AuthUser | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) return null;
+
+    // Retornamos el objeto completo pero tipado como AuthUser
+    // password se incluye internamente para la verificación
+    const authUser = new AuthUser(user.id, user.email, user.name, user.createdAt);
+    // Adjuntamos password para que LoginUseCase pueda verificarlo
+    (authUser as any)['password'] = user.password;
+    return authUser;
+  }
+
+  async findById(id: string): Promise<AuthUser | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+
+    if (!user) return null;
+
+    return new AuthUser(user.id, user.email, user.name, user.createdAt);
+  }
+
+  async create(
+    id: string,
+    email: string,
+    name: string,
+    password: string,
+  ): Promise<AuthUser> {
+    const user = await this.prisma.user.create({
+      data: { id, email, name, password },
+    });
+
+    return new AuthUser(user.id, user.email, user.name, user.createdAt);
+  }
+
+  async emailExists(email: string): Promise<boolean> {
+    const count = await this.prisma.user.count({
+      where: { email },
+    });
+    return count > 0;
+  }
+}

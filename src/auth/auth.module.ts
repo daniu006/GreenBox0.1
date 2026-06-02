@@ -1,0 +1,20 @@
+import { Module } from '@nestjs/common';
+import { AuthController } from './auth.controller';
+import { RegisterUseCase } from './usecases/register.usecase';
+import { LoginUseCase } from './usecases/login.usecase';
+import { AuthPrismaRepository } from './auth.repository';
+import { AUTH_REPOSITORY } from './domain/auth.repository.interface';
+import { PrismaModule } from 'src/shared/prisma/prisma.module';
+
+@Module({
+  imports: [PrismaModule],
+  controllers: [AuthController],
+  providers: [RegisterUseCase,LoginUseCase,
+    {
+      provide: AUTH_REPOSITORY,
+      useClass: AuthPrismaRepository,
+    },
+  ],
+  exports: [RegisterUseCase, LoginUseCase],
+})
+export class AuthModule {}

@@ -1,0 +1,23 @@
+import { Module } from '@nestjs/common';
+import { ReadingController } from './reading.controller';
+import { CreateReadingUseCase } from './usecases/create-reading.usecase';
+import { GetReadingsByPeriodUseCase } from './usecases/get-readings-by-period.usecase';
+import { ReadingPrismaRepository } from './reading.repository';
+import { READING_REPOSITORY } from './domain/reading.repository.interface';
+import { AutomaticControlModule } from '../automatic-control/automatic-control.module';
+
+@Module({
+  imports: [AutomaticControlModule],
+  controllers: [ReadingController],
+  providers: [
+    CreateReadingUseCase,
+    GetReadingsByPeriodUseCase,
+    ReadingPrismaRepository,
+    {
+      provide: READING_REPOSITORY,
+      useClass: ReadingPrismaRepository,
+    },
+  ],
+  exports: [READING_REPOSITORY, GetReadingsByPeriodUseCase],
+})
+export class ReadingModule {}
