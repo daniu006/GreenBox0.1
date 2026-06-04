@@ -9,8 +9,8 @@ import { HistoryRepository, History, HistoryType, HISTORY_TYPES } from './histor
 
 export interface HistoryPeaks {
   temperature: { max: number; maxAt: Date; min: number; minAt: Date };
-  humidity:    { max: number; maxAt: Date; min: number; minAt: Date };
-  health:      { max: number; maxAt: Date; min: number; minAt: Date };
+  humidity: { max: number; maxAt: Date; min: number; minAt: Date };
+  health: { max: number; maxAt: Date; min: number; minAt: Date };
 }
 
 export interface HistoryWithPeaks {
@@ -26,7 +26,7 @@ export class HistoryService {
   constructor(
     private readonly historyRepository: HistoryRepository,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async save(userPlantId: number, type: HistoryType): Promise<History & { healthLabel: string }> {
     const userPlant = await this.prisma.userPlant.findUnique({
@@ -48,11 +48,11 @@ export class HistoryService {
     }
 
     const count = readings.length;
-    const avgTemperature  = readings.reduce((s, r) => s + r.temperature,  0) / count;
-    const avgHumidity     = readings.reduce((s, r) => s + r.humidity,     0) / count;
+    const avgTemperature = readings.reduce((s, r) => s + r.temperature, 0) / count;
+    const avgHumidity = readings.reduce((s, r) => s + r.humidity, 0) / count;
     const avgSoilMoisture = readings.reduce((s, r) => s + r.soilMoisture, 0) / count;
-    const avgLightHours   = readings.reduce((s, r) => s + r.lightHours,   0) / count;
-    const avgWaterLevel   = readings.reduce((s, r) => s + r.waterLevel,   0) / count;
+    const avgLightHours = readings.reduce((s, r) => s + r.lightHours, 0) / count;
+    const avgWaterLevel = readings.reduce((s, r) => s + r.waterLevel, 0) / count;
 
     const estimatedHealth = this.calculateHealth(
       avgTemperature, avgHumidity, avgWaterLevel,
@@ -63,11 +63,11 @@ export class HistoryService {
       userPlantId,
       type,
       week: this.getWeekNumber(new Date()),
-      temperature:     parseFloat(avgTemperature.toFixed(2)),
-      humidity:        parseFloat(avgHumidity.toFixed(2)),
-      soilMoisture:    parseFloat(avgSoilMoisture.toFixed(2)),
-      lightHours:      parseFloat(avgLightHours.toFixed(2)),
-      waterLevel:      parseFloat(avgWaterLevel.toFixed(2)),
+      temperature: parseFloat(avgTemperature.toFixed(2)),
+      humidity: parseFloat(avgHumidity.toFixed(2)),
+      soilMoisture: parseFloat(avgSoilMoisture.toFixed(2)),
+      lightHours: parseFloat(avgLightHours.toFixed(2)),
+      waterLevel: parseFloat(avgWaterLevel.toFixed(2)),
       estimatedHealth: parseFloat(estimatedHealth.toFixed(2)),
     });
 
@@ -147,8 +147,8 @@ export class HistoryService {
 
     return {
       temperature: findPeaks(r => r.temperature),
-      humidity:    findPeaks(r => r.humidity),
-      health:      findPeaks(r => r.estimatedHealth),
+      humidity: findPeaks(r => r.humidity),
+      health: findPeaks(r => r.estimatedHealth),
     };
   }
 
@@ -188,11 +188,11 @@ export class HistoryService {
       ? 100 : Math.max(0, (avgSoilMoisture / minSoil) * 100);
 
     return (
-      tempScore     * 0.25 +
+      tempScore * 0.25 +
       humidityScore * 0.25 +
-      waterScore    * 0.20 +
-      lightScore    * 0.15 +
-      soilScore     * 0.15
+      waterScore * 0.20 +
+      lightScore * 0.15 +
+      soilScore * 0.15
     );
   }
 

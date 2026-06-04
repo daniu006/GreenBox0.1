@@ -5,4 +5,4 @@ import { AutomaticControlService } from './automatic-control.service';
   providers: [AutomaticControlService],
   exports: [AutomaticControlService],
 })
-export class AutomaticControlModule {}
+export class AutomaticControlModule { }

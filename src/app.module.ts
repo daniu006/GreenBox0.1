@@ -15,6 +15,8 @@ import { StatisticModule } from './statistic/statistic.module';
 import { PhotoModule } from './photo/photo.module';
 import { WeatherModule } from './weather/weather.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { WebsocketModule } from './websocket/websocket.module';
+
 @Module({
   imports: [
     PrismaModule,
@@ -31,6 +33,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     PhotoModule,
     WeatherModule,
     NotificationsModule,
+    WebsocketModule,
   ],
   controllers: [AppController],
   providers: [AppService],

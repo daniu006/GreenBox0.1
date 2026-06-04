@@ -1,5 +1,18 @@
-import { Controller, Post, Get, Body, Param, Query, ParseIntPipe, UseGuards, HttpCode, HttpStatus, } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  ParseIntPipe,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Req,
+} from '@nestjs/common';
 import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
+import { EspAuthGuard } from 'src/shared/guards/esp-auth.guard';
 import { ReadingService, Period } from './reading.service';
 import { CreateReadingDto } from './reading.dto';
 
@@ -8,9 +21,11 @@ export class ReadingController {
   constructor(private readonly readingService: ReadingService) {}
 
   @Post()
+  @UseGuards(EspAuthGuard)
   @HttpCode(HttpStatus.CREATED)
-  async create(@Body() dto: CreateReadingDto) {
-    const result = await this.readingService.create(dto);
+  async create(@Body() dto: CreateReadingDto, @Req() req: any) {
+    const boxId: number = req.boxId; // Inyectado por EspAuthGuard
+    const result = await this.readingService.create(dto, boxId);
     return {
       message: 'Lectura procesada exitosamente',
       data: result.reading,
@@ -32,7 +47,11 @@ export class ReadingController {
     @Query('period') period: string,
     @Query('date') date?: string,
   ) {
-    const result = await this.readingService.getByPeriod(userPlantId, period as Period, date);
+    const result = await this.readingService.getByPeriod(
+      userPlantId,
+      period as Period,
+      date,
+    );
     return {
       message: `Lecturas del período ${period} obtenidas exitosamente`,
       data: result,

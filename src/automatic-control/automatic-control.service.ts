@@ -2,16 +2,16 @@ import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 
 export interface SensorReading {
-  temperature:  number;
-  humidity:     number;
+  temperature: number;
+  humidity: number;
   soilMoisture: number;
-  lightHours:   number;
-  waterLevel:   number;
+  lightHours: number;
+  waterLevel: number;
 }
 
 export interface ControlCommand {
-  pump:   boolean;
-  light:  boolean;
+  pump: boolean;
+  light: boolean;
   reason: string;
 }
 
@@ -19,7 +19,7 @@ export interface ControlCommand {
 export class AutomaticControlService {
   private readonly logger = new Logger(AutomaticControlService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async evaluate(
     userPlantId: number,
@@ -42,10 +42,10 @@ export class AutomaticControlService {
     const plant = userPlant.plant;
     const reasons: string[] = [];
 
-    const minSoil  = plant.minSoilMoisture ?? 30;
-    const soilDry  = reading.soilMoisture < minSoil;
+    const minSoil = plant.minSoilMoisture ?? 30;
+    const soilDry = reading.soilMoisture < minSoil;
     const hasWater = reading.waterLevel > plant.minWaterLevel;
-    const pump     = soilDry && hasWater;
+    const pump = soilDry && hasWater;
 
     if (soilDry && !hasWater) {
       reasons.push(`Suelo seco (${reading.soilMoisture}%) pero sin agua (${reading.waterLevel}%)`);

@@ -17,7 +17,7 @@ export class StatisticService {
   constructor(
     private readonly statisticRepository: StatisticRepository,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   async calculate(userPlantId: number): Promise<StatisticFormatted | null> {
     const userPlant = await this.prisma.userPlant.findUnique({
@@ -45,10 +45,10 @@ export class StatisticService {
     const plant = userPlant.plant;
     const count = readings.length;
 
-    const avgTemperature  = readings.reduce((s, r) => s + r.temperature,  0) / count;
-    const avgHumidity     = readings.reduce((s, r) => s + r.humidity,     0) / count;
-    const avgLightHours   = readings.reduce((s, r) => s + r.lightHours,   0) / count;
-    const avgWaterLevel   = readings.reduce((s, r) => s + r.waterLevel,   0) / count;
+    const avgTemperature = readings.reduce((s, r) => s + r.temperature, 0) / count;
+    const avgHumidity = readings.reduce((s, r) => s + r.humidity, 0) / count;
+    const avgLightHours = readings.reduce((s, r) => s + r.lightHours, 0) / count;
+    const avgWaterLevel = readings.reduce((s, r) => s + r.waterLevel, 0) / count;
     const avgSoilMoisture = readings.reduce((s, r) => s + r.soilMoisture, 0) / count;
 
     const estimatedHealth = this.calculateHealth(
@@ -59,10 +59,10 @@ export class StatisticService {
     const statistic = await this.statisticRepository.upsert({
       userPlantId,
       week: this.getWeekNumber(new Date()),
-      avgTemperature:  parseFloat(avgTemperature.toFixed(2)),
-      avgHumidity:     parseFloat(avgHumidity.toFixed(2)),
-      avgLightHours:   parseFloat(avgLightHours.toFixed(2)),
-      avgWaterLevel:   parseFloat(avgWaterLevel.toFixed(2)),
+      avgTemperature: parseFloat(avgTemperature.toFixed(2)),
+      avgHumidity: parseFloat(avgHumidity.toFixed(2)),
+      avgLightHours: parseFloat(avgLightHours.toFixed(2)),
+      avgWaterLevel: parseFloat(avgWaterLevel.toFixed(2)),
       avgSoilMoisture: parseFloat(avgSoilMoisture.toFixed(2)),
       estimatedHealth: parseFloat(estimatedHealth.toFixed(2)),
     });
@@ -136,11 +136,11 @@ export class StatisticService {
       ? 100 : Math.max(0, (avgSoilMoisture / minSoil) * 100);
 
     return (
-      tempScore     * 0.25 +
+      tempScore * 0.25 +
       humidityScore * 0.25 +
-      waterScore    * 0.20 +
-      lightScore    * 0.15 +
-      soilScore     * 0.15
+      waterScore * 0.20 +
+      lightScore * 0.15 +
+      soilScore * 0.15
     );
   }
 

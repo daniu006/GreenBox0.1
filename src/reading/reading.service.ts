@@ -17,10 +17,10 @@ export interface ReadingWithCommands {
 }
 
 export interface PeriodPeaks {
-  temperature:  { max: number; maxAt: Date; min: number; minAt: Date };
-  humidity:     { max: number; maxAt: Date; min: number; minAt: Date };
+  temperature: { max: number; maxAt: Date; min: number; minAt: Date };
+  humidity: { max: number; maxAt: Date; min: number; minAt: Date };
   soilMoisture: { max: number; maxAt: Date; min: number; minAt: Date };
-  waterLevel:   { max: number; maxAt: Date; min: number; minAt: Date };
+  waterLevel: { max: number; maxAt: Date; min: number; minAt: Date };
 }
 
 export interface PeriodReadings {
@@ -37,35 +37,35 @@ export class ReadingService {
     private readonly readingRepository: ReadingRepository,
     private readonly prisma: PrismaService,
     private readonly alertService: AlertService,
-  ) {}
+  ) { }
 
-  async create(dto: CreateReadingDto): Promise<ReadingWithCommands> {
-    const userPlant = await this.prisma.userPlant.findUnique({
-      where: { id: dto.userPlantId },
+  async create(dto: CreateReadingDto, boxId: number): Promise<ReadingWithCommands> {
+    // Resuelve la planta activa de ese box (la que no está archivada)
+    const userPlant = await this.prisma.userPlant.findFirst({
+      where: { boxId, archivedAt: null },
       include: { plant: true },
     });
 
     if (!userPlant || !userPlant.plant) {
-      throw new NotFoundException('Instancia de planta no encontrada');
-    }
-    if (userPlant.archivedAt !== null) {
-      throw new NotFoundException('Esta planta está archivada');
+      throw new NotFoundException(`No hay ninguna planta activa en el box ${boxId}`);
     }
 
-    const plant = userPlant.plant;
+    const userPlantId = userPlant.id;
+    const plant       = userPlant.plant;
+
     const reading = await this.readingRepository.create({
-      userPlantId: dto.userPlantId,
-      temperature: dto.temperature,
-      humidity: dto.humidity,
+      userPlantId,
+      temperature:  dto.temperature,
+      humidity:     dto.humidity,
       soilMoisture: dto.soilMoisture,
-      lightHours: dto.lightHours,
-      waterLevel: dto.waterLevel,
+      lightHours:   dto.lightHours,
+      waterLevel:   dto.waterLevel,
     });
 
     const pumpOn = this.shouldActivatePump(dto, plant);
-    await this.checkAndCreateAlerts(dto, plant, dto.userPlantId);
+    await this.checkAndCreateAlerts(dto, plant, userPlantId);
 
-    this.logger.log(`Lectura creada para userPlant ${dto.userPlantId} — pump: ${pumpOn}`);
+    this.logger.log(`Lectura creada para userPlant ${userPlantId} (box ${boxId}) — pump: ${pumpOn}`);
     return { reading, commands: { pump: pumpOn } };
   }
 
@@ -165,10 +165,10 @@ export class ReadingService {
     };
 
     return {
-      temperature:  findPeaks(r => r.temperature),
-      humidity:     findPeaks(r => r.humidity),
+      temperature: findPeaks(r => r.temperature),
+      humidity: findPeaks(r => r.humidity),
       soilMoisture: findPeaks(r => r.soilMoisture),
-      waterLevel:   findPeaks(r => r.waterLevel),
+      waterLevel: findPeaks(r => r.waterLevel),
     };
   }
 
