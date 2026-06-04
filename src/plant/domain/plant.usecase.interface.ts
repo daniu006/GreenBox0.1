@@ -1,1 +1,0 @@
-import { Plant } from './plant.entity';export interface IPlantUseCase {  getAll(): Promise<Plant[]>;  getByCategory(category: string): Promise<Plant[]>;  getById(id: number): Promise<Plant>;}export const PLANT_USE_CASE = 'PLANT_USE_CASE';

@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
+
 @Injectable()
 export class CloudinaryService {
   private readonly logger = new Logger(CloudinaryService.name);
+
   constructor() {
     cloudinary.config({
       cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -10,9 +12,10 @@ export class CloudinaryService {
       api_secret: process.env.CLOUDINARY_API_SECRET,
     });
   }
+
   async uploadBuffer(
-    buffer:   Buffer,
-    folder:   string = 'greenbox/plants',
+    buffer:    Buffer,
+    folder:    string = 'greenbox/plants',
     publicId?: string,
   ): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -22,7 +25,7 @@ export class CloudinaryService {
           public_id:      publicId,
           resource_type:  'image',
           transformation: [
-            { width: 1080, height: 1080, crop: 'limit' }, 
+            { width: 1080, height: 1080, crop: 'limit' },
             { quality: 'auto:good' },
             { fetch_format: 'auto' },
           ],
@@ -39,12 +42,13 @@ export class CloudinaryService {
       uploadStream.end(buffer);
     });
   }
+
   async deleteByUrl(imageUrl: string): Promise<void> {
     try {
-      const urlParts  = imageUrl.split('/');
-      const fileName  = urlParts[urlParts.length - 1];
-      const folder    = urlParts[urlParts.length - 2];
-      const publicId  = `${folder}/${fileName.split('.')[0]}`;
+      const urlParts = imageUrl.split('/');
+      const fileName = urlParts[urlParts.length - 1];
+      const folder   = urlParts[urlParts.length - 2];
+      const publicId = `${folder}/${fileName.split('.')[0]}`;
       await cloudinary.uploader.destroy(publicId);
       this.logger.log(`Imagen eliminada de Cloudinary: ${publicId}`);
     } catch (error) {

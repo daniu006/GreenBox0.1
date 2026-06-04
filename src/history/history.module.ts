@@ -1,1 +1,11 @@
-import { Module } from '@nestjs/common';import { HistoryController } from './history.controller';import { SaveHistoryUseCase } from './usecases/save-history.usecase';import { GetHistoryByPeriodUseCase } from './usecases/get-history-by-period.usecase';import { HistoryPrismaRepository } from './history.repository';import { HISTORY_REPOSITORY } from './domain/history.repository.interface';@Module({  controllers: [HistoryController],  providers: [    SaveHistoryUseCase,    GetHistoryByPeriodUseCase,    HistoryPrismaRepository,    {      provide: HISTORY_REPOSITORY,      useClass: HistoryPrismaRepository,    },  ],  exports: [SaveHistoryUseCase, HISTORY_REPOSITORY],})export class HistoryModule {}
+import { Module } from '@nestjs/common';
+import { HistoryController } from './history.controller';
+import { HistoryService } from './history.service';
+import { HistoryRepository } from './history.repository';
+
+@Module({
+  controllers: [HistoryController],
+  providers: [HistoryService, HistoryRepository],
+  exports: [HistoryService, HistoryRepository],
+})
+export class HistoryModule {}

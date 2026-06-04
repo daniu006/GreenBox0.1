@@ -1,25 +1,38 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../shared/prisma/prisma.service';
-import {
-  IPhotoRepository,
-  CreatePhotoData,
-  PHOTO_REPOSITORY,
-} from './domain/photo.repository.interface';
-import { PlantPhoto, PlantAiAnalysis } from './domain/photo.entity';
+import { PrismaService } from 'src/shared/prisma/prisma.service';
+
+export interface PlantAiAnalysis {
+  healthScore:     number;
+  status:          string;
+  observations:    string[];
+  recommendations: string[];
+  analyzedAt:      string;
+}
+
+export interface PlantPhoto {
+  id:          number;
+  userPlantId: number;
+  imageUrl:    string;
+  type:        string;
+  aiAnalysis:  PlantAiAnalysis | null;
+  takenAt:     Date;
+}
+
+export interface CreatePhotoData {
+  userPlantId: number;
+  imageUrl:    string;
+  type:        string;
+  aiAnalysis?: Record<string, unknown> | null;
+}
+
+export const PHOTO_TYPES = ['initial', 'report'] as const;
+export type PhotoType = typeof PHOTO_TYPES[number];
+
 @Injectable()
-export class PhotoPrismaRepository implements IPhotoRepository {
+export class PhotoRepository {
   constructor(private readonly prisma: PrismaService) {}
-  private toEntity(raw: any): PlantPhoto {
-    return new PlantPhoto(
-      raw.id,
-      raw.userPlantId,
-      raw.imageUrl,
-      raw.type,
-      raw.aiAnalysis as PlantAiAnalysis | null,
-      raw.takenAt,
-    );
-  }
+
   async create(data: CreatePhotoData): Promise<PlantPhoto> {
     const photo = await this.prisma.plantPhoto.create({
       data: {
@@ -31,19 +44,22 @@ export class PhotoPrismaRepository implements IPhotoRepository {
           : Prisma.JsonNull,
       },
     });
-    return this.toEntity(photo);
+    return photo as PlantPhoto;
   }
+
   async findByUserPlant(userPlantId: number): Promise<PlantPhoto[]> {
     const photos = await this.prisma.plantPhoto.findMany({
       where: { userPlantId },
       orderBy: { takenAt: 'desc' },
     });
-    return photos.map(p => this.toEntity(p));
+    return photos as PlantPhoto[];
   }
+
   async findById(id: number): Promise<PlantPhoto | null> {
     const photo = await this.prisma.plantPhoto.findUnique({ where: { id } });
-    return photo ? this.toEntity(photo) : null;
+    return photo as PlantPhoto | null;
   }
+
   async updateAnalysis(
     id: number,
     analysis: Record<string, unknown>,
@@ -52,11 +68,13 @@ export class PhotoPrismaRepository implements IPhotoRepository {
       where: { id },
       data: { aiAnalysis: analysis as Prisma.InputJsonValue },
     });
-    return this.toEntity(photo);
+    return photo as PlantPhoto;
   }
+
   async delete(id: number): Promise<void> {
     await this.prisma.plantPhoto.delete({ where: { id } });
   }
+
   async countByUserPlant(userPlantId: number): Promise<number> {
     return this.prisma.plantPhoto.count({ where: { userPlantId } });
   }

@@ -1,1 +1,11 @@
-import { Module } from '@nestjs/common';import { PlantController } from './plant.controller';import { GetAllPlantsUseCase } from './usecases/get-all-plants.usecase';import { GetByCategoryUseCase } from './usecases/get-by-category.usecase';import { GetPlantsUseCase } from './usecases/get-plant.usecase';import { PlantPrismaRepository } from './plant.repository';import { PLANT_REPOSITORY } from './domain/plant.repository.interface';@Module({  controllers: [PlantController],  providers: [    GetAllPlantsUseCase,    GetByCategoryUseCase,    GetPlantsUseCase,    PlantPrismaRepository,    {      provide: PLANT_REPOSITORY,      useClass: PlantPrismaRepository,    },  ],  exports: [GetPlantsUseCase, PLANT_REPOSITORY],})export class PlantModule {}
+import { Module } from '@nestjs/common';
+import { PlantController } from './plant.controller';
+import { PlantService } from './plant.service';
+import { PlantRepository } from './plant.repository';
+
+@Module({
+  controllers: [PlantController],
+  providers: [PlantService, PlantRepository],
+  exports: [PlantService, PlantRepository],
+})
+export class PlantModule {}

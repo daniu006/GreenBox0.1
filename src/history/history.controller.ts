@@ -1,1 +1,36 @@
-import { Controller, Get, Post, Param, Query, ParseIntPipe, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';import { SaveHistoryUseCase } from './usecases/save-history.usecase';import { GetHistoryByPeriodUseCase } from './usecases/get-history-by-period.usecase';import { HistoryType } from './domain/history.entity';@Controller('history')@UseGuards(FirebaseAuthGuard)export class HistoryController {  constructor(    private readonly saveHistoryUseCase: SaveHistoryUseCase,    private readonly getHistoryByPeriodUseCase: GetHistoryByPeriodUseCase,  ) {}      @Get(':userPlantId')  async getByPeriod(    @Param('userPlantId', ParseIntPipe) userPlantId: number,    @Query('period') period: string,    @Query('date') date?: string,  ) {    const result = await this.getHistoryByPeriodUseCase.execute(      userPlantId,      period,      date,    );    return {      message: `Historial ${period} obtenido exitosamente`,      data: {        records: result.records.map(r => ({          ...r,          healthLabel: r.healthLabel(),                    xLabel: this.getXLabel(r.date, period),        })),        peaks: result.peaks,        total: result.records.length,      },    };  }      @Post(':userPlantId/save')  @HttpCode(HttpStatus.CREATED)  async save(    @Param('userPlantId', ParseIntPipe) userPlantId: number,    @Query('type') type: string,  ) {    const history = await this.saveHistoryUseCase.execute(      userPlantId,      type as HistoryType,    );    return {      message: `Historial ${type} guardado exitosamente`,      data: { ...history, healthLabel: history.healthLabel() },    };  }  private getXLabel(date: Date, period: string): string {    if (period === 'daily') {            return date.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });    } else if (period === 'weekly') {            return date.toLocaleDateString('es-EC', { weekday: 'short', day: '2-digit' })        + ' ' + date.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });    } else {            return date.toLocaleDateString('es-EC', { day: '2-digit', month: 'short' });    }  }}
+import {Controller,Get,Post,Param,Query,ParseIntPipe,UseGuards,HttpCode,HttpStatus,} from '@nestjs/common';
+import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
+import { HistoryService } from './history.service';
+import { HistoryType } from './history.repository';
+
+@Controller('history')
+@UseGuards(FirebaseAuthGuard)
+export class HistoryController {
+  constructor(private readonly historyService: HistoryService) {}
+
+  @Get(':userPlantId')
+  async getByPeriod(
+    @Param('userPlantId', ParseIntPipe) userPlantId: number,
+    @Query('period') period: string,
+    @Query('date') date?: string,
+  ) {
+    const result = await this.historyService.getByPeriod(userPlantId, period, date);
+    return {
+      message: `Historial ${period} obtenido exitosamente`,
+      data: result,
+    };
+  }
+
+  @Post(':userPlantId/save')
+  @HttpCode(HttpStatus.CREATED)
+  async save(
+    @Param('userPlantId', ParseIntPipe) userPlantId: number,
+    @Query('type') type: string,
+  ) {
+    const history = await this.historyService.save(userPlantId, type as HistoryType);
+    return {
+      message: `Historial ${type} guardado exitosamente`,
+      data: history,
+    };
+  }
+}

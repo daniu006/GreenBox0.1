@@ -1,1 +1,36 @@
-import { Controller,Get,Post,Param,Query,ParseIntPipe,UseGuards,} from '@nestjs/common';import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';import { CalculateStatisticsUseCase } from './usecases/calculate-statistics.usecase';import { GetStatisticsByPeriodUseCase } from './usecases/get-statistics-by-period.usecase';@Controller('statistic')@UseGuards(FirebaseAuthGuard)export class StatisticController {  constructor(    private readonly calculateUseCase: CalculateStatisticsUseCase,    private readonly getUseCase: GetStatisticsByPeriodUseCase,  ) {}    @Get(':userPlantId/latest')  async getLatest(@Param('userPlantId', ParseIntPipe) userPlantId: number) {    const statistic = await this.getUseCase.getLatest(userPlantId);    return {      message: 'Estadística más reciente obtenida',      data: statistic        ? { ...statistic, healthLabel: statistic.healthLabel() }        : null,    };  }    @Get(':userPlantId')  async getAll(@Param('userPlantId', ParseIntPipe) userPlantId: number) {    const statistics = await this.getUseCase.getAll(userPlantId);    return {      message: 'Estadísticas obtenidas exitosamente',      data: statistics.map(s => ({ ...s, healthLabel: s.healthLabel() })),      total: statistics.length,    };  }    @Get(':userPlantId/week')  async getByWeek(    @Param('userPlantId', ParseIntPipe) userPlantId: number,    @Query('week', ParseIntPipe) week: number,  ) {    const statistic = await this.getUseCase.getByWeek(userPlantId, week);    return {      message: `Estadística de la semana ${week} obtenida`,      data: statistic        ? { ...statistic, healthLabel: statistic.healthLabel() }        : null,    };  }      @Post(':userPlantId/calculate')  async calculate(@Param('userPlantId', ParseIntPipe) userPlantId: number) {    const statistic = await this.calculateUseCase.execute(userPlantId);    return {      message: 'Estadísticas calculadas exitosamente',      data: statistic        ? { ...statistic, healthLabel: statistic.healthLabel() }        : null,    };  }}
+import {Controller,Get,Post,Param,Query,ParseIntPipe,UseGuards,} from '@nestjs/common';
+import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
+import { StatisticService } from './statistic.service';
+
+@Controller('statistic')
+@UseGuards(FirebaseAuthGuard)
+export class StatisticController {
+  constructor(private readonly statisticService: StatisticService) {}
+
+  @Get(':userPlantId/latest')
+  async getLatest(@Param('userPlantId', ParseIntPipe) userPlantId: number) {
+    const data = await this.statisticService.getLatest(userPlantId);
+    return { message: 'Estadística más reciente obtenida', data };
+  }
+
+  @Get(':userPlantId/week')
+  async getByWeek(
+    @Param('userPlantId', ParseIntPipe) userPlantId: number,
+    @Query('week', ParseIntPipe) week: number,
+  ) {
+    const data = await this.statisticService.getByWeek(userPlantId, week);
+    return { message: `Estadística de la semana ${week} obtenida`, data };
+  }
+
+  @Get(':userPlantId')
+  async getAll(@Param('userPlantId', ParseIntPipe) userPlantId: number) {
+    const data = await this.statisticService.getAll(userPlantId);
+    return { message: 'Estadísticas obtenidas exitosamente', data, total: data.length };
+  }
+
+  @Post(':userPlantId/calculate')
+  async calculate(@Param('userPlantId', ParseIntPipe) userPlantId: number) {
+    const data = await this.statisticService.calculate(userPlantId);
+    return { message: 'Estadísticas calculadas exitosamente', data };
+  }
+}

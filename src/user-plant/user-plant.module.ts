@@ -1,1 +1,14 @@
-import { Module } from '@nestjs/common';import { UserPlantController } from './user-plant.controller';import { CreateUserPlantUseCase } from './usecases/create-user-plant.usecase';import { GetUserPlantsUseCase } from './usecases/get-user-plants.usecase';import { ArchiveUserPlantUseCase } from './usecases/archive-user-plant.usecase';import { DeleteUserPlantUseCase } from './usecases/delete-user-plant.usecase';import { UserPlantPrismaRepository } from './user-plant.repository';import { USER_PLANT_REPOSITORY } from './domain/user-plant.repository.interface';import { PlantModule } from '../plant/plant.module';import { BoxModule } from '../box/box.module';@Module({  imports: [    PlantModule,     BoxModule,     ],  controllers: [UserPlantController],  providers: [    CreateUserPlantUseCase,    GetUserPlantsUseCase,    ArchiveUserPlantUseCase,    DeleteUserPlantUseCase,    UserPlantPrismaRepository,    {      provide: USER_PLANT_REPOSITORY,      useClass: UserPlantPrismaRepository,    },  ],  exports: [USER_PLANT_REPOSITORY, GetUserPlantsUseCase],})export class UserPlantModule {}
+import { Module } from '@nestjs/common';
+import { UserPlantController } from './user-plant.controller';
+import { UserPlantService } from './user-plant.service';
+import { UserPlantRepository } from './user-plant.repository';
+import { PlantModule } from 'src/plant/plant.module';
+import { BoxModule } from 'src/box/box.module';
+
+@Module({
+  imports: [PlantModule, BoxModule],
+  controllers: [UserPlantController],
+  providers: [UserPlantService, UserPlantRepository],
+  exports: [UserPlantService, UserPlantRepository],
+})
+export class UserPlantModule {}
