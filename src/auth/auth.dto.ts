@@ -18,7 +18,7 @@ export class RegisterDto {
 }
 
 export class LoginDto {
-  @IsEmail({}, { message: 'El correo no tiene un formato válido' })
+  
   @IsNotEmpty({ message: 'El correo es obligatorio' })
   email: string;
 

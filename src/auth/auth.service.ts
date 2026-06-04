@@ -74,4 +74,22 @@ export class AuthService {
 
     return { uid: user.id, email: user.email, name: user.name, token: firebaseToken };
   }
+  async getIdToken(dto: LoginDto): Promise<AuthResult> {
+  const apiKey = process.env.FIREBASE_API_KEY;
+  const response = await fetch(
+    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: dto.email,
+        password: dto.password,
+        returnSecureToken: true,
+      }),
+    }
+  );
+  const data = await response.json() as any;
+  if (data.error) throw new UnauthorizedException('Credenciales incorrectas');
+  return { uid: data.localId, email: data.email, name: data.displayName, token: data.idToken };
+}
 }

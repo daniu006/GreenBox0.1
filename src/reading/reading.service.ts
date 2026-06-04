@@ -7,20 +7,22 @@ import {
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ReadingRepository, Reading } from './reading.repository';
 import { AlertService } from 'src/alert/alert.service';
+import { AutomaticControlService } from 'src/automatic-control/automatic-control.service';
+import { WebsocketService } from 'src/websocket/websocket.service';
 import { CreateReadingDto } from './reading.dto';
 
 export type Period = 'day' | 'week' | 'month';
 
 export interface ReadingWithCommands {
   reading: Reading;
-  commands: { pump: boolean };
+  commands: { pump: boolean; light: boolean };
 }
 
 export interface PeriodPeaks {
-  temperature: { max: number; maxAt: Date; min: number; minAt: Date };
-  humidity: { max: number; maxAt: Date; min: number; minAt: Date };
+  temperature:  { max: number; maxAt: Date; min: number; minAt: Date };
+  humidity:     { max: number; maxAt: Date; min: number; minAt: Date };
   soilMoisture: { max: number; maxAt: Date; min: number; minAt: Date };
-  waterLevel: { max: number; maxAt: Date; min: number; minAt: Date };
+  waterLevel:   { max: number; maxAt: Date; min: number; minAt: Date };
 }
 
 export interface PeriodReadings {
@@ -37,36 +39,69 @@ export class ReadingService {
     private readonly readingRepository: ReadingRepository,
     private readonly prisma: PrismaService,
     private readonly alertService: AlertService,
-  ) { }
+    private readonly automaticControlService: AutomaticControlService,
+    private readonly websocketService: WebsocketService,
+  ) {}
 
   async create(dto: CreateReadingDto, boxId: number): Promise<ReadingWithCommands> {
-    // Resuelve la planta activa de ese box (la que no está archivada)
+    // Deduce el userPlantId desde el boxId
     const userPlant = await this.prisma.userPlant.findFirst({
       where: { boxId, archivedAt: null },
       include: { plant: true },
     });
 
     if (!userPlant || !userPlant.plant) {
-      throw new NotFoundException(`No hay ninguna planta activa en el box ${boxId}`);
+      throw new NotFoundException('No hay planta activa para este dispositivo');
     }
 
-    const userPlantId = userPlant.id;
-    const plant       = userPlant.plant;
-
+    const plant = userPlant.plant;
     const reading = await this.readingRepository.create({
-      userPlantId,
-      temperature:  dto.temperature,
-      humidity:     dto.humidity,
+      userPlantId: userPlant.id,
+      temperature: dto.temperature,
+      humidity: dto.humidity,
       soilMoisture: dto.soilMoisture,
-      lightHours:   dto.lightHours,
-      waterLevel:   dto.waterLevel,
+      lightHours: dto.lightHours,
+      waterLevel: dto.waterLevel,
     });
 
-    const pumpOn = this.shouldActivatePump(dto, plant);
-    await this.checkAndCreateAlerts(dto, plant, userPlantId);
+    // Emite la lectura al frontend con throttling
+    this.websocketService.emitReading({
+      userPlantId: userPlant.id,
+      boxId,
+      temperature: dto.temperature,
+      humidity: dto.humidity,
+      soilMoisture: dto.soilMoisture,
+      lightHours: dto.lightHours,
+      waterLevel: dto.waterLevel,
+      timestamp: reading.timestamp,
+    });
 
-    this.logger.log(`Lectura creada para userPlant ${userPlantId} (box ${boxId}) — pump: ${pumpOn}`);
-    return { reading, commands: { pump: pumpOn } };
+    // Evalúa control automático
+    const command = await this.automaticControlService.evaluate(userPlant.id, {
+      temperature: dto.temperature,
+      humidity: dto.humidity,
+      soilMoisture: dto.soilMoisture,
+      lightHours: dto.lightHours,
+      waterLevel: dto.waterLevel,
+    });
+
+    // Emite el comando al frontend inmediatamente
+    this.websocketService.emitCommand({
+      userPlantId: userPlant.id,
+      boxId,
+      pump: command.pump,
+      light: command.light,
+      reason: command.reason,
+    });
+
+    // Crea alertas si corresponde
+    await this.checkAndCreateAlerts(dto, plant, userPlant.id);
+
+    this.logger.log(
+      `Lectura creada para userPlant ${userPlant.id} (box ${boxId}) — pump: ${command.pump}, light: ${command.light}`,
+    );
+
+    return { reading, commands: { pump: command.pump, light: command.light } };
   }
 
   async getLatest(userPlantId: number): Promise<Reading | null> {
@@ -90,7 +125,7 @@ export class ReadingService {
       readings = await this.readingRepository.findByDay(userPlantId, refDate);
     } else if (period === 'week') {
       const start = this.getWeekStart(refDate);
-      const end = this.getWeekEnd(refDate);
+      const end   = this.getWeekEnd(refDate);
       readings = await this.readingRepository.findByWeek(userPlantId, start, end);
     } else if (period === 'month') {
       readings = await this.readingRepository.findByMonth(
@@ -107,12 +142,6 @@ export class ReadingService {
     };
   }
 
-  private shouldActivatePump(reading: CreateReadingDto, plant: any): boolean {
-    const soilTooLow = reading.soilMoisture < (plant.minSoilMoisture ?? 30);
-    const waterTooLow = reading.waterLevel < plant.minWaterLevel;
-    return soilTooLow && !waterTooLow;
-  }
-
   private async checkAndCreateAlerts(
     reading: CreateReadingDto,
     plant: any,
@@ -120,12 +149,16 @@ export class ReadingService {
   ): Promise<void> {
     const checks = [
       {
-        condition: reading.temperature < plant.minTemperature || reading.temperature > plant.maxTemperature,
+        condition:
+          reading.temperature < plant.minTemperature ||
+          reading.temperature > plant.maxTemperature,
         type: 'temperature',
         message: `Temperatura fuera de rango: ${reading.temperature}°C (óptimo: ${plant.minTemperature}-${plant.maxTemperature}°C)`,
       },
       {
-        condition: reading.humidity < plant.minHumidity || reading.humidity > plant.maxHumidity,
+        condition:
+          reading.humidity < plant.minHumidity ||
+          reading.humidity > plant.maxHumidity,
         type: 'humidity',
         message: `Humedad fuera de rango: ${reading.humidity}% (óptimo: ${plant.minHumidity}-${plant.maxHumidity}%)`,
       },
@@ -135,7 +168,8 @@ export class ReadingService {
         message: `Nivel de agua bajo: ${reading.waterLevel}% (mínimo: ${plant.minWaterLevel}%)`,
       },
       {
-        condition: plant.minSoilMoisture && reading.soilMoisture < plant.minSoilMoisture,
+        condition:
+          plant.minSoilMoisture && reading.soilMoisture < plant.minSoilMoisture,
         type: 'soilMoisture',
         message: `Humedad del suelo baja: ${reading.soilMoisture}% (mínimo: ${plant.minSoilMoisture}%)`,
       },
@@ -165,10 +199,10 @@ export class ReadingService {
     };
 
     return {
-      temperature: findPeaks(r => r.temperature),
-      humidity: findPeaks(r => r.humidity),
+      temperature:  findPeaks(r => r.temperature),
+      humidity:     findPeaks(r => r.humidity),
       soilMoisture: findPeaks(r => r.soilMoisture),
-      waterLevel: findPeaks(r => r.waterLevel),
+      waterLevel:   findPeaks(r => r.waterLevel),
     };
   }
 

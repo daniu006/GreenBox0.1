@@ -25,4 +25,11 @@ export class AuthController {
       data: result,
     };
   }
+
+  @Post('token')
+@HttpCode(HttpStatus.OK)
+async getIdToken(@Body() dto: LoginDto) {
+  const result = await this.authService.getIdToken(dto);
+  return { message: 'ID token obtenido', data: result };
+}
 }

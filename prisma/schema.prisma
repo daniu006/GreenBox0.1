@@ -32,7 +32,7 @@ model Box {
   locationName String?
   fcmTokens    String[]  @default([])
   createdAt    DateTime  @default(now())
-  espToken String?
+  espToken     String?
 
   user         User?       @relation(fields: [userId], references: [id])
   userPlants   UserPlant[]
@@ -45,7 +45,7 @@ model Box {
 model Plant {
   id                Int         @id @default(autoincrement())
   name              String
-  category          String      // interior | comestible | ornamental | suculenta | arbol
+  category          String      
   imageUrl          String?
   minTemperature    Float
   maxTemperature    Float

@@ -4,7 +4,7 @@ import { PlantService } from './plant.service';
 import { CreatePlantDto, UpdatePlantDto } from './plant.dto';
 
 @Controller('plant')
-@UseGuards(FirebaseAuthGuard)
+//@UseGuards(FirebaseAuthGuard)
 export class PlantController {
   constructor(private readonly plantService: PlantService) {}
 

@@ -9,14 +9,14 @@ import { UpdateUserDto } from './user.dto';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get('me')
-  async getMe(@CurrentUser() user: CurrentUserPayload) {
+  @Get('user')
+  async getUser(@CurrentUser() user: CurrentUserPayload) {
     const data = await this.userService.getMe(user.uid);
     return { message: 'Perfil obtenido', data };
   }
 
-  @Patch('me')
-  async updateMe(
+  @Patch('user')
+  async updateUser(
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: UpdateUserDto,
   ) {
