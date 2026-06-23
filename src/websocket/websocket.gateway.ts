@@ -7,20 +7,26 @@ import {
   OnGatewayConnection,
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
-import { Logger } from '@nestjs/common';
+import { forwardRef, Inject, Logger } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
+import { WebsocketService } from './websocket.service';
+import { SensorDataWsDto } from 'src/reading/reading.dto';
 
 @NestWebSocketGateway({
-  cors: {
-    origin: '*', // En producción pon la URL del frontend
-  },
-  namespace: '/ws',
+  cors: { origin: '*' },
+  allowEIO3: true,
 })
+
 export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private server: Server;
 
   private readonly logger = new Logger(WebSocketGateway.name);
+
+  constructor(
+    @Inject(forwardRef(() => WebsocketService))
+    private readonly websocketService: WebsocketService,
+  ) {}
 
   handleConnection(client: Socket): void {
     this.logger.log(`Cliente conectado: ${client.id}`);
@@ -30,8 +36,8 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     this.logger.log(`Cliente desconectado: ${client.id}`);
   }
 
-  // El frontend se une a la room de su planta
-  // Emite desde el frontend: { userPlantId: 5 }
+  // ─── Frontend se une a la room de su planta ─────────────────────────────────
+
   @SubscribeMessage('join:plant')
   handleJoinPlant(
     @MessageBody() data: { userPlantId: number },
@@ -53,7 +59,16 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     this.logger.log(`Cliente ${client.id} abandonó room ${room}`);
   }
 
-  // Método interno que usa WebsocketService para emitir a una room
+
+  @SubscribeMessage('sensor:data')
+  async handleSensorData(
+    @MessageBody() data: SensorDataWsDto,
+    @ConnectedSocket() _client: Socket,
+  ): Promise<void> {
+    await this.websocketService.handleSensorData(data);
+  }
+
+
   emitToRoom(room: string, event: string, data: unknown): void {
     this.server.to(room).emit(event, data);
   }
