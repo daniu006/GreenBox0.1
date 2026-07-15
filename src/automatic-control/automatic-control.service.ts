@@ -1,5 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
+import { OpenMeteoService } from 'src/weather/open-meteo.service';
 
 export interface SensorReading {
   temperature: number;
@@ -19,7 +20,10 @@ export interface ControlCommand {
 export class AutomaticControlService {
   private readonly logger = new Logger(AutomaticControlService.name);
 
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly openMeteoService: OpenMeteoService,
+  ) { }
 
   async evaluate(
     userPlantId: number,
@@ -27,7 +31,7 @@ export class AutomaticControlService {
   ): Promise<ControlCommand> {
     const userPlant = await this.prisma.userPlant.findUnique({
       where: { id: userPlantId },
-      include: { plant: true },
+      include: { plant: true, box: true },
     });
 
     if (!userPlant || !userPlant.plant) {
@@ -42,26 +46,52 @@ export class AutomaticControlService {
     const plant = userPlant.plant;
     const reasons: string[] = [];
 
+    // ── 1. Evaluación base: suelo seco + agua disponible ──────────────────────
     const minSoil = plant.minSoilMoisture ?? 30;
     const soilDry = reading.soilMoisture < minSoil;
     const hasWater = reading.waterLevel > plant.minWaterLevel;
-    const pump = soilDry && hasWater;
+    let pump = soilDry && hasWater;
 
-    if (soilDry && !hasWater) {
+    // ── 2. Suspender bomba si está lloviendo en la ubicación del box ──────────
+    if (pump) {
+      const box = userPlant.box as any;
+      if (box?.latitude && box?.longitude) {
+        try {
+          const weather = await this.openMeteoService.getCurrentWeather(
+            box.latitude,
+            box.longitude,
+            box.locationName ?? 'Box',
+          );
+          const goodToWater = weather.isGoodForWatering();
+          if (!goodToWater) {
+            pump = false;
+            reasons.push(
+              `Riego suspendido por lluvia o calor extremo ` +
+              `(clima: ${weather.weatherDesc}, ${weather.temperature}°C)`,
+            );
+            this.logger.warn(
+              `[userPlant ${userPlantId}] Riego cancelado por clima: ` +
+              `${weather.weatherDesc} (código ${weather.weatherCode})`,
+            );
+          } else {
+            reasons.push(`Suelo seco (${reading.soilMoisture}% < ${minSoil}%) — activando bomba`);
+          }
+        } catch (e) {
+          // Si falla la consulta del clima, regar igual (fail-safe)
+          this.logger.warn(`[userPlant ${userPlantId}] No se pudo consultar el clima: ${e.message}`);
+          reasons.push(`Suelo seco (${reading.soilMoisture}% < ${minSoil}%) — activando bomba (sin datos de clima)`);
+        }
+      } else {
+        // Sin ubicación del box configurada → regar normalmente
+        reasons.push(`Suelo seco (${reading.soilMoisture}% < ${minSoil}%) — activando bomba`);
+      }
+    } else if (soilDry && !hasWater) {
       reasons.push(`Suelo seco (${reading.soilMoisture}%) pero sin agua (${reading.waterLevel}%)`);
-    } else if (pump) {
-      reasons.push(`Suelo seco (${reading.soilMoisture}% < ${minSoil}%) — activando bomba`);
-    }
-
-    const light = reading.lightHours < plant.lightHours;
-    if (light) {
-      reasons.push(`Luz insuficiente (${reading.lightHours}h de ${plant.lightHours}h requeridas)`);
     }
 
     const reason = reasons.length > 0 ? reasons.join(' | ') : 'Todos los parámetros OK';
+    this.logger.log(`[userPlant ${userPlantId}] pump: ${pump}, light: false — ${reason}`);
 
-    this.logger.log(`[userPlant ${userPlantId}] pump: ${pump}, light: ${light} — ${reason}`);
-
-    return { pump, light, reason };
+    return { pump, light: false, reason };
   }
 }

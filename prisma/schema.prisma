@@ -30,6 +30,7 @@ model Box {
   latitude     Float?
   longitude    Float?
   locationName String?
+  profileImage String?
   fcmTokens    String[]  @default([])
   createdAt    DateTime  @default(now())
   espToken     String?

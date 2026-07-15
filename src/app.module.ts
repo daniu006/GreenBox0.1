@@ -16,6 +16,7 @@ import { PhotoModule } from './photo/photo.module';
 import { WeatherModule } from './weather/weather.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { WebsocketModule } from './websocket/websocket.module';
+import { SensorsModule } from './sensors/sensors.module';
 
 @Module({
   imports: [
@@ -34,6 +35,7 @@ import { WebsocketModule } from './websocket/websocket.module';
     WeatherModule,
     NotificationsModule,
     WebsocketModule,
+    SensorsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

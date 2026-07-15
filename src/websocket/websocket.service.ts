@@ -5,6 +5,7 @@ import { AutomaticControlService } from 'src/automatic-control/automatic-control
 import { ReadingService } from 'src/reading/reading.service';
 import { SensorDataWsDto } from 'src/reading/reading.dto';
 import { WebSocketGateway } from './websocket.gateway';
+import { SensorsService } from 'src/sensors/sensors.service';
 
 
 export interface SensorPayload {
@@ -53,6 +54,7 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
     private readonly alertService: AlertService,
     private readonly automaticControlService: AutomaticControlService,
     private readonly readingService: ReadingService,
+    private readonly sensorsService: SensorsService,
   ){}
 
 
@@ -108,6 +110,26 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
       soilMoisture: data.soilMoisture,
       lightHours: data.lightHours,
       waterLevel: data.waterLevel,
+    });
+
+    const currentState = this.sensorsService.getActuatorStatus(data.boxId);
+    let newWateringCount = currentState?.wateringCount ?? 0;
+    let newLastWateringDate = currentState?.lastWateringDate ?? null;
+
+    if (command.pump) {
+      if (!currentState?.pump) {
+        newWateringCount += 1;
+      }
+      newLastWateringDate = new Date().toISOString();
+    }
+
+    this.sensorsService.setActuatorStatus(data.boxId, {
+      boxId: data.boxId,
+      boxName: userPlant.nickname ?? userPlant.plant.name ?? `Caja ${data.boxId}`,
+      led: command.light,
+      pump: command.pump,
+      wateringCount: newWateringCount,
+      lastWateringDate: newLastWateringDate,
     });
 
     this.emitCommand({

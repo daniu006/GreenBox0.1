@@ -9,6 +9,7 @@ import { BoxRepository, Box } from './box.repository';
 
 export interface ValidateCodeResult {
   box: Box;
+  userPlantId?: number | null;
   plant: {
     id: number;
     name: string;
@@ -31,9 +32,9 @@ export class BoxService {
   constructor(
     private readonly boxRepository: BoxRepository,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
-  async validateCode(code: string, userId: string): Promise<ValidateCodeResult> {
+  async validateCode(code: string, userId: string, userEmail?: string): Promise<ValidateCodeResult> {
     const box = await this.boxRepository.findByCode(code.toUpperCase());
     if (!box) {
       throw new NotFoundException('El código del dispositivo no existe');
@@ -41,6 +42,20 @@ export class BoxService {
 
     if (box.userId && box.userId !== userId) {
       throw new ForbiddenException('Este dispositivo ya está asignado a otro usuario');
+    }
+
+    // Asegurar que el usuario existe en Postgres para evitar violación de llave foránea
+    const userExists = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!userExists) {
+      await this.prisma.user.create({
+        data: {
+          id: userId,
+          email: userEmail || `${userId}@gmail.com`,
+          name: userEmail ? userEmail.split('@')[0] : 'Usuario',
+          password: '',
+        },
+      });
+      this.logger.log(`Usuario creado automáticamente en Postgres: ${userId}`);
     }
 
     let assignedBox = box;
@@ -57,6 +72,7 @@ export class BoxService {
 
     return {
       box: assignedBox,
+      userPlantId: activeUserPlant?.id || null,
       plant: activeUserPlant?.plant
         ? {
             id: activeUserPlant.plant.id,
@@ -109,6 +125,54 @@ export class BoxService {
 
   async removeToken(token: string): Promise<void> {
     await this.boxRepository.removeFcmToken(token);
+  }
+
+  async getBoxInfo(boxId: number, userId: string) {
+    const box = await this.boxRepository.findById(boxId);
+    if (!box) {
+      throw new NotFoundException('Dispositivo no encontrado');
+    }
+    if (box.userId !== userId) {
+      throw new ForbiddenException('No tienes permiso para ver este dispositivo');
+    }
+
+    const activeUserPlant = await this.prisma.userPlant.findFirst({
+      where: { boxId, userId, archivedAt: null },
+      include: { plant: true },
+    });
+
+    return {
+      box: {
+        id: box.id,
+        code: box.code,
+        name: box.locationName || `Caja ${box.code}`,
+        locationName: box.locationName,
+        latitude: box.latitude,
+        longitude: box.longitude,
+        profileImage: box.profileImage || null,
+        userPlantId: activeUserPlant?.id || null,
+        plant: activeUserPlant?.plant || null,
+      },
+    };
+  }
+
+  async updateProfile(boxId: number, userId: string, name?: string, profileImage?: string | null) {
+    const box = await this.boxRepository.findById(boxId);
+    if (!box) {
+      throw new NotFoundException('Dispositivo no encontrado');
+    }
+    if (box.userId !== userId) {
+      throw new ForbiddenException('No tienes permiso para modificar este dispositivo');
+    }
+
+    const dataToUpdate: any = {};
+    if (name !== undefined) dataToUpdate.locationName = name;
+    if (profileImage !== undefined) dataToUpdate.profileImage = profileImage;
+
+    return this.prisma.box.update({
+      where: { id: boxId },
+      data: dataToUpdate,
+    }) as any;
   }
 
   hasLocation(box: Box): boolean {
