@@ -1,28 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private transporter: nodemailer.Transporter;
+  private resend: Resend;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
-    });
+    this.resend = new Resend(process.env.RESEND_API_KEY);
   }
 
   async sendBoxCode(toEmail: string, userName: string, code: string): Promise<void> {
-    const mailOptions = {
-      from: `"GreenBox 🌱" <${process.env.MAIL_USER}>`,
-      to: toEmail,
+    const { error } = await this.resend.emails.send({
+      from: 'GreenBox 🌱 <onboarding@resend.dev>',
+      to: [toEmail],
       subject: '🌱 Tu código de acceso GreenBox',
       html: `
         <!DOCTYPE html>
@@ -79,14 +70,14 @@ export class MailService {
         </body>
         </html>
       `,
-    };
+    });
 
-    try {
-      await this.transporter.sendMail(mailOptions);
-      this.logger.log(`✅ Correo enviado a ${toEmail} con código ${code}`);
-    } catch (error) {
+    if (error) {
       this.logger.error(`❌ Error enviando correo a ${toEmail}: ${error.message}`);
-      throw error;
+      throw new Error(error.message);
     }
+
+    this.logger.log(`✅ Correo enviado a ${toEmail} con código ${code}`);
   }
 }
+
