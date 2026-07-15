@@ -88,15 +88,13 @@ export class AuthController {
       }
     });
 
-    // Enviar el código al correo del usuario
-    try {
-      await this.mailService.sendBoxCode(dto.email, dto.name, code);
-      this.logger.log(`✅ Código ${code} enviado a ${dto.email}`);
-    } catch (emailError) {
-      this.logger.error(`❌ Error enviando correo a ${dto.email}: ${emailError.message}`);
-      // El box ya fue creado — devolvemos el código también en la respuesta
-      // para que el usuario pueda continuar aunque el correo haya fallado
-    }
+    // Enviar el código al correo del usuario en segundo plano (sin await)
+    // para que la API responda inmediatamente y no sufra de timeouts en Render (60s)
+    this.mailService.sendBoxCode(dto.email, dto.name, code)
+      .then(() => this.logger.log(`✅ Código ${code} enviado a ${dto.email}`))
+      .catch((emailError) => {
+        this.logger.error(`❌ Error enviando correo a ${dto.email}: ${emailError.message}`);
+      });
 
     return {
       valid: true,
