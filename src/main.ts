@@ -3,6 +3,11 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import * as admin from 'firebase-admin';
 import * as dotenv from 'dotenv';
+import * as dns from 'dns';
+
+// Forzar el uso de IPv4 primero para evitar errores ENETUNREACH (común en Railway con IPv6)
+dns.setDefaultResultOrder('ipv4first');
+
 dotenv.config();
 async function bootstrap() {
   if (admin.apps.length === 0) {
