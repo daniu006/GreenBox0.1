@@ -57,19 +57,28 @@ export class BoxService {
             data: { id: userId },
           });
           this.logger.log(`Usuario actualizado con nuevo Firebase ID: ${userId}`);
-          return; // Continuar con la vinculación
+        } else {
+          await this.prisma.user.create({
+            data: {
+              id: userId,
+              email: userEmail || `${userId}@gmail.com`,
+              name: userEmail ? userEmail.split('@')[0] : 'Usuario',
+              password: '',
+            },
+          });
+          this.logger.log(`Usuario creado automáticamente en Postgres: ${userId}`);
         }
+      } else {
+        await this.prisma.user.create({
+          data: {
+            id: userId,
+            email: `${userId}@gmail.com`,
+            name: 'Usuario',
+            password: '',
+          },
+        });
+        this.logger.log(`Usuario creado automáticamente en Postgres: ${userId}`);
       }
-
-      await this.prisma.user.create({
-        data: {
-          id: userId,
-          email: userEmail || `${userId}@gmail.com`,
-          name: userEmail ? userEmail.split('@')[0] : 'Usuario',
-          password: '',
-        },
-      });
-      this.logger.log(`Usuario creado automáticamente en Postgres: ${userId}`);
     }
 
     let assignedBox = box;
