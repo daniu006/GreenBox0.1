@@ -47,6 +47,20 @@ export class BoxService {
     // Asegurar que el usuario existe en Postgres para evitar violación de llave foránea
     const userExists = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!userExists) {
+      // Verificar si existe por correo electrónico (caso: cuenta eliminada y recreada en Firebase)
+      if (userEmail) {
+        const userByEmail = await this.prisma.user.findUnique({ where: { email: userEmail } });
+        if (userByEmail) {
+          // Actualizar el ID antiguo con el nuevo ID de Firebase
+          await this.prisma.user.update({
+            where: { email: userEmail },
+            data: { id: userId },
+          });
+          this.logger.log(`Usuario actualizado con nuevo Firebase ID: ${userId}`);
+          return; // Continuar con la vinculación
+        }
+      }
+
       await this.prisma.user.create({
         data: {
           id: userId,
