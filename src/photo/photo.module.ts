@@ -14,6 +14,6 @@ import { PrismaModule } from 'src/shared/prisma/prisma.module';
   ],
   controllers: [PhotoController],
   providers: [PhotoService, PhotoRepository, CloudinaryService],
-  exports: [PhotoService, PhotoRepository],
+  exports: [PhotoService, PhotoRepository, CloudinaryService],
 })
 export class PhotoModule {}

@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { BoxRepository, Box } from './box.repository';
+import { CloudinaryService } from '../photo/cloudinary.service';
 
 export interface ValidateCodeResult {
   box: Box;
@@ -32,6 +33,7 @@ export class BoxService {
   constructor(
     private readonly boxRepository: BoxRepository,
     private readonly prisma: PrismaService,
+    private readonly cloudinaryService: CloudinaryService,
   ) { }
 
   async validateCode(code: string, userId: string, userEmail?: string): Promise<ValidateCodeResult> {
@@ -190,7 +192,37 @@ export class BoxService {
 
     const dataToUpdate: any = {};
     if (name !== undefined) dataToUpdate.locationName = name;
-    if (profileImage !== undefined) dataToUpdate.profileImage = profileImage;
+    
+    if (profileImage !== undefined) {
+      let finalProfileImage: string | null = profileImage;
+
+      if (profileImage && profileImage.startsWith('data:image/')) {
+        try {
+          // Eliminar foto anterior de Cloudinary para no saturar espacio
+          if (box.profileImage && box.profileImage.startsWith('http')) {
+            await this.cloudinaryService.deleteByUrl(box.profileImage).catch((e) =>
+              this.logger.warn(`No se pudo borrar imagen anterior de Cloudinary: ${e.message}`)
+            );
+          }
+
+          const base64Data = profileImage.replace(/^data:image\/\w+;base64,/, '');
+          const buffer = Buffer.from(base64Data, 'base64');
+          
+          const uploadedUrl = await this.cloudinaryService.uploadBuffer(
+            buffer,
+            'greenbox/profiles',
+            `profile_${boxId}_${Date.now()}`
+          );
+          
+          finalProfileImage = uploadedUrl;
+        } catch (err) {
+          this.logger.error(`Error subiendo foto de perfil a Cloudinary: ${err.message}`);
+          finalProfileImage = box.profileImage;
+        }
+      }
+
+      dataToUpdate.profileImage = finalProfileImage;
+    }
 
     return this.prisma.box.update({
       where: { id: boxId },
