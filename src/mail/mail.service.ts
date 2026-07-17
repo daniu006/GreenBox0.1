@@ -10,13 +10,15 @@ export class MailService {
   private resend: Resend | null = null;
 
   constructor() {
-    if (process.env.MAIL_USER && process.env.MAIL_PASS) {
+    if (process.env.BREVO_API_KEY) {
+      this.logger.log('Inicializando servicio de correo con Brevo HTTP API');
+    } else if (process.env.MAIL_USER && process.env.MAIL_PASS) {
       this.logger.log('Inicializando servicio de correo con Gmail SMTP (Nodemailer)');
     } else if (process.env.RESEND_API_KEY) {
       this.logger.log('Inicializando servicio de correo con Resend (API HTTP)');
       this.resend = new Resend(process.env.RESEND_API_KEY);
     } else {
-      this.logger.warn('⚠️ No se ha configurado ninguna credencial de correo (MAIL_USER/MAIL_PASS o RESEND_API_KEY)');
+      this.logger.warn('⚠️ No se ha configurado ninguna credencial de correo (BREVO_API_KEY, MAIL_USER/MAIL_PASS o RESEND_API_KEY)');
     }
   }
 
@@ -31,7 +33,6 @@ export class MailService {
 
     let host = 'smtp.gmail.com';
     try {
-      // Forzar resolución DNS de smtp.gmail.com a IPv4 para evitar ENETUNREACH en Railway
       const ips = await dns.promises.resolve4('smtp.gmail.com');
       if (ips && ips.length > 0) {
         host = ips[0];
@@ -51,7 +52,7 @@ export class MailService {
       },
       tls: {
         rejectUnauthorized: false,
-        servername: 'smtp.gmail.com', // Crucial para la validación SSL/TLS
+        servername: 'smtp.gmail.com',
       },
     } as any);
 
@@ -116,7 +117,40 @@ export class MailService {
         </html>
       `;
 
-    if (this.resend) {
+    // 1. Priorizar Brevo HTTP API si la API Key está configurada
+    if (process.env.BREVO_API_KEY) {
+      try {
+        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+          method: 'POST',
+          headers: {
+            'accept': 'application/json',
+            'api-key': process.env.BREVO_API_KEY,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            sender: {
+              name: 'GreenBox 🌱',
+              email: process.env.MAIL_USER || 'jumbozaida735@gmail.com',
+            },
+            to: [{ email: toEmail }],
+            subject: subject,
+            htmlContent: html,
+          }),
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errText}`);
+        }
+
+        this.logger.log(`✅ Correo enviado a ${toEmail} con código ${code} usando Brevo HTTP API`);
+      } catch (error) {
+        this.logger.error(`❌ Error enviando correo a ${toEmail} con Brevo HTTP API: ${error.message}`);
+        throw error;
+      }
+    }
+    // 2. Usar Resend si está configurado
+    else if (this.resend) {
       try {
         await this.resend.emails.send({
           from: 'GreenBox <onboarding@resend.dev>',
@@ -129,7 +163,9 @@ export class MailService {
         this.logger.error(`❌ Error enviando correo a ${toEmail} con Resend: ${error.message}`);
         throw error;
       }
-    } else {
+    }
+    // 3. Fallback a Gmail SMTP (funciona en localhost pero falla en Railway/Render por bloqueo de puertos)
+    else {
       const transporter = await this.getTransporter();
       if (transporter) {
         const mailOptions = {
