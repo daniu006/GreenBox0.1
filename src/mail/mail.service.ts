@@ -22,6 +22,7 @@ export class MailService {
         tls: {
           rejectUnauthorized: false,
         },
+        family: 4, // <-- Forzar el uso de IPv4 para evitar ENETUNREACH en Railway
       } as any);
     } else if (process.env.RESEND_API_KEY) {
       this.logger.log('Inicializando servicio de correo con Resend (API HTTP)');
