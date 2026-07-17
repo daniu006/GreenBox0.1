@@ -71,34 +71,50 @@ export class AuthController {
   @Post('register-send-code')
   @HttpCode(HttpStatus.OK)
   async registerSendCode(@Body() dto: { email: string; name: string }) {
-    // Generar código único tipo GB1234
-    let code = '';
-    let codeExists = true;
-    while (codeExists) {
-      code = 'GB' + Math.floor(1000 + Math.random() * 9000);
-      const exists = await this.prisma.box.findUnique({ where: { code } });
-      if (!exists) codeExists = false;
-    }
+    const emailLower = dto.email.trim().toLowerCase();
 
-    // Crear el box en la DB sin asignar a ningún usuario todavía
-    await this.prisma.box.create({
-      data: {
-        code,
-        locationName: `Caja de ${dto.name}`,
-      }
+    // 1. Verificar si el usuario ya existe en Postgres y si tiene alguna caja asignada
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: emailLower },
+      include: { boxes: true },
     });
 
+    let code = '';
+
+    // 2. Si el usuario existe y ya tiene una caja vinculada, reutilizar su código existente
+    if (existingUser && existingUser.boxes && existingUser.boxes.length > 0) {
+      code = existingUser.boxes[0].code;
+      this.logger.log(`Reutilizando código existente ${code} para el correo ${emailLower}`);
+    } else {
+      // 3. Si no existe o no tiene caja, generar un código nuevo tipo GB1234
+      let codeExists = true;
+      while (codeExists) {
+        code = 'GB' + Math.floor(1000 + Math.random() * 9000);
+        const exists = await this.prisma.box.findUnique({ where: { code } });
+        if (!exists) codeExists = false;
+      }
+
+      // Crear la caja en la DB sin asignar a ningún usuario todavía
+      await this.prisma.box.create({
+        data: {
+          code,
+          locationName: `Caja de ${dto.name}`,
+        },
+      });
+      this.logger.log(`Generando nuevo código ${code} para el correo ${emailLower}`);
+    }
+
     // Enviar el código al correo del usuario en segundo plano (sin await)
-    // para que la API responda inmediatamente y no sufra de timeouts en Render (60s)
-    this.mailService.sendBoxCode(dto.email, dto.name, code)
-      .then(() => this.logger.log(`✅ Código ${code} enviado a ${dto.email}`))
+    // para que la API responda inmediatamente y no sufra de timeouts
+    this.mailService.sendBoxCode(emailLower, dto.name, code)
+      .then(() => this.logger.log(`✅ Código ${code} enviado a ${emailLower}`))
       .catch((emailError) => {
-        this.logger.error(`❌ Error enviando correo a ${dto.email}: ${emailError.message}`);
+        this.logger.error(`❌ Error enviando correo a ${emailLower}: ${emailError.message}`);
       });
 
     return {
       valid: true,
-      message: 'Código de acceso generado y enviado a tu correo',
+      message: 'Código de acceso procesado y enviado a tu correo',
       code, // También lo devolvemos en la respuesta como respaldo
     };
   }

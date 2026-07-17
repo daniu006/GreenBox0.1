@@ -1,33 +1,37 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private transporter: nodemailer.Transporter;
+  private transporter: nodemailer.Transporter | null = null;
+  private resend: Resend | null = null;
 
   constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 587,
-      secure: false,
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false,
-      },
-      localAddress: '0.0.0.0',
-    } as any);
+    if (process.env.RESEND_API_KEY) {
+      this.logger.log('Inicializando servicio de correo con Resend (API HTTP)');
+      this.resend = new Resend(process.env.RESEND_API_KEY);
+    } else {
+      this.logger.log('Inicializando servicio de correo con Gmail SMTP (Nodemailer)');
+      this.transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        auth: {
+          user: process.env.MAIL_USER,
+          pass: process.env.MAIL_PASS,
+        },
+        tls: {
+          rejectUnauthorized: false,
+        },
+      } as any);
+    }
   }
 
   async sendBoxCode(toEmail: string, userName: string, code: string): Promise<void> {
-    const mailOptions = {
-      from: `"GreenBox 🌱" <${process.env.MAIL_USER}>`,
-      to: toEmail,
-      subject: '🌱 Tu código de acceso GreenBox',
-      html: `
+    const subject = '🌱 Tu código de acceso GreenBox';
+    const html = `
         <!DOCTYPE html>
         <html>
         <head>
@@ -81,15 +85,37 @@ export class MailService {
           </div>
         </body>
         </html>
-      `,
-    };
+      `;
 
-    try {
-      await this.transporter.sendMail(mailOptions);
-      this.logger.log(`✅ Correo enviado a ${toEmail} con código ${code}`);
-    } catch (error) {
-      this.logger.error(`❌ Error enviando correo a ${toEmail}: ${error.message}`);
-      throw error;
+    if (this.resend) {
+      try {
+        await this.resend.emails.send({
+          from: 'GreenBox <onboarding@resend.dev>',
+          to: toEmail,
+          subject,
+          html,
+        });
+        this.logger.log(`✅ Correo enviado a ${toEmail} con código ${code} usando Resend`);
+      } catch (error) {
+        this.logger.error(`❌ Error enviando correo a ${toEmail} con Resend: ${error.message}`);
+        throw error;
+      }
+    } else if (this.transporter) {
+      const mailOptions = {
+        from: `"GreenBox 🌱" <${process.env.MAIL_USER}>`,
+        to: toEmail,
+        subject,
+        html,
+      };
+      try {
+        await this.transporter.sendMail(mailOptions);
+        this.logger.log(`✅ Correo enviado a ${toEmail} con código ${code} usando Gmail SMTP`);
+      } catch (error) {
+        this.logger.error(`❌ Error enviando correo a ${toEmail} con Gmail SMTP: ${error.message}`);
+        throw error;
+      }
+    } else {
+      this.logger.warn('⚠️ No se ha inicializado ningún servicio de correo válido.');
     }
   }
 }
