@@ -246,6 +246,7 @@ export class AuthController {
           id: box.id,
           code: box.code,
           locationName: box.locationName || `Caja de ${user.name}`,
+          profileImage: box.profileImage || null,
           hasLocation: this.boxService.hasLocation(box as any),
         },
         userPlantId: activeUserPlant?.id || null,

@@ -31,6 +31,7 @@ export class BoxController {
           id: result.box.id,
           code: result.box.code,
           locationName: result.box.locationName,
+          profileImage: result.box.profileImage || null,
           hasLocation: this.boxService.hasLocation(result.box),
         },
         userPlantId: result.userPlantId,
@@ -50,6 +51,7 @@ export class BoxController {
         locationName: b.locationName,
         latitude: b.latitude,
         longitude: b.longitude,
+        profileImage: b.profileImage || null,
         hasLocation: this.boxService.hasLocation(b),
       })),
     };
