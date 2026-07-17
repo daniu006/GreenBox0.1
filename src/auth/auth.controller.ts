@@ -131,15 +131,15 @@ export class AuthController {
         if (!exists) codeExists = false;
       }
 
-      // Crear la caja en la DB asignándole el usuario de una vez si lo tenemos
+      // Crear la caja en la DB de forma desvinculada (se vinculará al validar el código)
       await this.prisma.box.create({
         data: {
           code,
           locationName: `Caja de ${dto.name}`,
-          userId: userForBox ? userForBox.id : null,
+          userId: null, // <-- Inicialmente null, obliga a pasar por la validación del código para vincular!
         },
       });
-      this.logger.log(`Generando nuevo código ${code} para el correo ${emailLower} y asignándolo de inmediato`);
+      this.logger.log(`Generando nuevo código ${code} desvinculado para el correo ${emailLower}`);
     }
 
     // Enviar el código al correo del usuario en segundo plano (sin await)
@@ -159,10 +159,10 @@ export class AuthController {
 
   @Post('validate-code-login')
   @HttpCode(HttpStatus.OK)
-  async validateCodeLogin(@Body() dto: { code: string }) {
+  async validateCodeLogin(@Body() dto: { code: string; email?: string; firebaseUid?: string }) {
     const codeUpper = dto.code.trim().toUpperCase();
 
-    // Buscar la caja por código
+    // 1. Buscar la caja por código
     const box = await this.prisma.box.findUnique({
       where: { code: codeUpper },
     });
@@ -171,20 +171,53 @@ export class AuthController {
       throw new NotFoundException('El código del dispositivo no existe');
     }
 
-    if (!box.userId) {
-      throw new ForbiddenException('Este dispositivo no está vinculado a ningún usuario');
+    let targetUserId = box.userId;
+
+    // 2. Si la caja no está vinculada a ningún usuario, la vinculamos al usuario actual
+    if (!targetUserId) {
+      if (!dto.firebaseUid) {
+        throw new ForbiddenException('Este dispositivo no está vinculado a ningún usuario y no se proporcionó un UID de usuario para vincularlo');
+      }
+
+      // Verificar si el usuario existe en Postgres (creado en register-send-code)
+      let user = await this.prisma.user.findUnique({
+        where: { id: dto.firebaseUid },
+      });
+
+      if (!user) {
+        if (!dto.email) {
+          throw new NotFoundException('El usuario no existe en la base de datos y falta el correo para crearlo');
+        }
+        user = await this.prisma.user.create({
+          data: {
+            id: dto.firebaseUid,
+            email: dto.email.trim().toLowerCase(),
+            name: dto.email.split('@')[0],
+            password: '',
+          },
+        });
+        this.logger.log(`Usuario creado de emergencia en validateCodeLogin: ${user.id}`);
+      }
+
+      // Vincular la caja al usuario
+      await this.prisma.box.update({
+        where: { id: box.id },
+        data: { userId: user.id },
+      });
+      targetUserId = user.id;
+      this.logger.log(`Caja ${box.code} vinculada al usuario ${user.id} exitosamente`);
     }
 
-    // Obtener el usuario de Postgres
+    // 3. Obtener el usuario de Postgres
     const user = await this.prisma.user.findUnique({
-      where: { id: box.userId },
+      where: { id: targetUserId },
     });
 
     if (!user) {
       throw new NotFoundException('El usuario del dispositivo no existe en la base de datos');
     }
 
-    // Generar un token personalizado de Firebase para este usuario
+    // 4. Generar un token personalizado de Firebase para este usuario
     let firebaseToken: string;
     try {
       firebaseToken = await admin.auth().createCustomToken(user.id);
@@ -212,7 +245,7 @@ export class AuthController {
         box: {
           id: box.id,
           code: box.code,
-          locationName: box.locationName,
+          locationName: box.locationName || `Caja de ${user.name}`,
           hasLocation: this.boxService.hasLocation(box as any),
         },
         userPlantId: activeUserPlant?.id || null,
