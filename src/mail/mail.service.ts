@@ -10,7 +10,9 @@ export class MailService {
   private resend: Resend | null = null;
 
   constructor() {
-    if (process.env.BREVO_API_KEY) {
+    if (process.env.APPS_SCRIPT_URL) {
+      this.logger.log('Inicializando servicio de correo con Google Apps Script HTTP API (Inbox garantizado)');
+    } else if (process.env.BREVO_API_KEY) {
       this.logger.log('Inicializando servicio de correo con Brevo HTTP API');
     } else if (process.env.MAIL_USER && process.env.MAIL_PASS) {
       this.logger.log('Inicializando servicio de correo con Gmail SMTP (Nodemailer)');
@@ -18,7 +20,7 @@ export class MailService {
       this.logger.log('Inicializando servicio de correo con Resend (API HTTP)');
       this.resend = new Resend(process.env.RESEND_API_KEY);
     } else {
-      this.logger.warn('⚠️ No se ha configurado ninguna credencial de correo (BREVO_API_KEY, MAIL_USER/MAIL_PASS o RESEND_API_KEY)');
+      this.logger.warn('⚠️ No se ha configurado ninguna credencial de correo');
     }
   }
 
@@ -117,8 +119,40 @@ export class MailService {
         </html>
       `;
 
-    // 1. Priorizar Brevo HTTP API si la API Key está configurada
-    if (process.env.BREVO_API_KEY) {
+    // 1. Método A: Google Apps Script (inbox 100% garantizado)
+    if (process.env.APPS_SCRIPT_URL) {
+      try {
+        const response = await fetch(process.env.APPS_SCRIPT_URL, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            token: 'greenbox-secure-token-12345',
+            to: toEmail,
+            subject: subject,
+            html: html,
+          }),
+        });
+
+        if (!response.ok) {
+          const errText = await response.text();
+          throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errText}`);
+        }
+
+        const resData: any = await response.json();
+        if (resData && resData.error) {
+          throw new Error(resData.error);
+        }
+
+        this.logger.log(`✅ Correo enviado a ${toEmail} con código ${code} usando Google Apps Script`);
+      } catch (error) {
+        this.logger.error(`❌ Error enviando correo a ${toEmail} con Google Apps Script: ${error.message}`);
+        throw error;
+      }
+    }
+    // 2. Método B: Brevo HTTP API
+    else if (process.env.BREVO_API_KEY) {
       try {
         const response = await fetch('https://api.brevo.com/v3/smtp/email', {
           method: 'POST',
@@ -149,7 +183,7 @@ export class MailService {
         throw error;
       }
     }
-    // 2. Usar Resend si está configurado
+    // 3. Método C: Resend
     else if (this.resend) {
       try {
         await this.resend.emails.send({
@@ -164,7 +198,7 @@ export class MailService {
         throw error;
       }
     }
-    // 3. Fallback a Gmail SMTP (funciona en localhost pero falla en Railway/Render por bloqueo de puertos)
+    // 4. Método D: Gmail SMTP (Nodemailer)
     else {
       const transporter = await this.getTransporter();
       if (transporter) {
