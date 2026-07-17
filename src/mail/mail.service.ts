@@ -9,10 +9,7 @@ export class MailService {
   private resend: Resend | null = null;
 
   constructor() {
-    if (process.env.RESEND_API_KEY) {
-      this.logger.log('Inicializando servicio de correo con Resend (API HTTP)');
-      this.resend = new Resend(process.env.RESEND_API_KEY);
-    } else {
+    if (process.env.MAIL_USER && process.env.MAIL_PASS) {
       this.logger.log('Inicializando servicio de correo con Gmail SMTP (Nodemailer)');
       this.transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
@@ -26,6 +23,11 @@ export class MailService {
           rejectUnauthorized: false,
         },
       } as any);
+    } else if (process.env.RESEND_API_KEY) {
+      this.logger.log('Inicializando servicio de correo con Resend (API HTTP)');
+      this.resend = new Resend(process.env.RESEND_API_KEY);
+    } else {
+      this.logger.warn('⚠️ No se ha configurado ninguna credencial de correo (MAIL_USER/MAIL_PASS o RESEND_API_KEY)');
     }
   }
 

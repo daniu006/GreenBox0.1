@@ -70,23 +70,59 @@ export class AuthController {
 
   @Post('register-send-code')
   @HttpCode(HttpStatus.OK)
-  async registerSendCode(@Body() dto: { email: string; name: string }) {
+  async registerSendCode(@Body() dto: { email: string; name: string; firebaseUid?: string }) {
     const emailLower = dto.email.trim().toLowerCase();
 
-    // 1. Verificar si el usuario ya existe en Postgres y si tiene alguna caja asignada
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: emailLower },
-      include: { boxes: true },
-    });
+    // 1. Si viene firebaseUid, asegurar que el usuario existe en Postgres (Neon)
+    if (dto.firebaseUid) {
+      const userExists = await this.prisma.user.findUnique({
+        where: { id: dto.firebaseUid },
+      });
+      if (!userExists) {
+        // También verificar por correo por si acaso existe con otro id viejo
+        const userByEmail = await this.prisma.user.findUnique({
+          where: { email: emailLower },
+        });
+        if (userByEmail) {
+          await this.prisma.user.update({
+            where: { email: emailLower },
+            data: { id: dto.firebaseUid },
+          });
+          this.logger.log(`Usuario actualizado con nuevo Firebase ID: ${dto.firebaseUid}`);
+        } else {
+          await this.prisma.user.create({
+            data: {
+              id: dto.firebaseUid,
+              email: emailLower,
+              name: dto.name,
+              password: '',
+            },
+          });
+          this.logger.log(`Usuario creado en Postgres desde registro: ${dto.firebaseUid}`);
+        }
+      }
+    }
+
+    // 2. Buscar si el usuario ya tiene una caja vinculada
+    // Priorizamos buscar por firebaseUid si está disponible
+    const userForBox = dto.firebaseUid
+      ? await this.prisma.user.findUnique({
+          where: { id: dto.firebaseUid },
+          include: { boxes: true },
+        })
+      : await this.prisma.user.findUnique({
+          where: { email: emailLower },
+          include: { boxes: true },
+        });
 
     let code = '';
 
-    // 2. Si el usuario existe y ya tiene una caja vinculada, reutilizar su código existente
-    if (existingUser && existingUser.boxes && existingUser.boxes.length > 0) {
-      code = existingUser.boxes[0].code;
+    // 3. Si el usuario existe y ya tiene una caja vinculada, reutilizar su código existente
+    if (userForBox && userForBox.boxes && userForBox.boxes.length > 0) {
+      code = userForBox.boxes[0].code;
       this.logger.log(`Reutilizando código existente ${code} para el correo ${emailLower}`);
     } else {
-      // 3. Si no existe o no tiene caja, generar un código nuevo tipo GB1234
+      // 4. Generar código nuevo tipo GB1234
       let codeExists = true;
       while (codeExists) {
         code = 'GB' + Math.floor(1000 + Math.random() * 9000);
@@ -94,14 +130,15 @@ export class AuthController {
         if (!exists) codeExists = false;
       }
 
-      // Crear la caja en la DB sin asignar a ningún usuario todavía
+      // Crear la caja en la DB asignándole el usuario de una vez si lo tenemos
       await this.prisma.box.create({
         data: {
           code,
           locationName: `Caja de ${dto.name}`,
+          userId: userForBox ? userForBox.id : null,
         },
       });
-      this.logger.log(`Generando nuevo código ${code} para el correo ${emailLower}`);
+      this.logger.log(`Generando nuevo código ${code} para el correo ${emailLower} y asignándolo de inmediato`);
     }
 
     // Enviar el código al correo del usuario en segundo plano (sin await)
