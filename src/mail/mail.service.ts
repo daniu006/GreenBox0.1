@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { Resend } from 'resend';
+import * as dns from 'dns';
 
 @Injectable()
 export class MailService {
@@ -11,25 +12,50 @@ export class MailService {
   constructor() {
     if (process.env.MAIL_USER && process.env.MAIL_PASS) {
       this.logger.log('Inicializando servicio de correo con Gmail SMTP (Nodemailer)');
-      this.transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false,
-        auth: {
-          user: process.env.MAIL_USER,
-          pass: process.env.MAIL_PASS,
-        },
-        tls: {
-          rejectUnauthorized: false,
-        },
-        family: 4, // <-- Forzar el uso de IPv4 para evitar ENETUNREACH en Railway
-      } as any);
     } else if (process.env.RESEND_API_KEY) {
       this.logger.log('Inicializando servicio de correo con Resend (API HTTP)');
       this.resend = new Resend(process.env.RESEND_API_KEY);
     } else {
       this.logger.warn('⚠️ No se ha configurado ninguna credencial de correo (MAIL_USER/MAIL_PASS o RESEND_API_KEY)');
     }
+  }
+
+  private async getTransporter(): Promise<nodemailer.Transporter | null> {
+    if (this.transporter) {
+      return this.transporter;
+    }
+
+    if (!process.env.MAIL_USER || !process.env.MAIL_PASS) {
+      return null;
+    }
+
+    let host = 'smtp.gmail.com';
+    try {
+      // Forzar resolución DNS de smtp.gmail.com a IPv4 para evitar ENETUNREACH en Railway
+      const ips = await dns.promises.resolve4('smtp.gmail.com');
+      if (ips && ips.length > 0) {
+        host = ips[0];
+        this.logger.log(`[MailService] Host smtp.gmail.com resuelto dinámicamente a la IP IPv4: ${host}`);
+      }
+    } catch (dnsErr) {
+      this.logger.warn(`[MailService] Error al resolver smtp.gmail.com a IPv4: ${dnsErr.message}. Se usará hostname por defecto.`);
+    }
+
+    this.transporter = nodemailer.createTransport({
+      host: host,
+      port: 587,
+      secure: false,
+      auth: {
+        user: process.env.MAIL_USER,
+        pass: process.env.MAIL_PASS,
+      },
+      tls: {
+        rejectUnauthorized: false,
+        servername: 'smtp.gmail.com', // Crucial para la validación SSL/TLS
+      },
+    } as any);
+
+    return this.transporter;
   }
 
   async sendBoxCode(toEmail: string, userName: string, code: string): Promise<void> {
@@ -103,22 +129,25 @@ export class MailService {
         this.logger.error(`❌ Error enviando correo a ${toEmail} con Resend: ${error.message}`);
         throw error;
       }
-    } else if (this.transporter) {
-      const mailOptions = {
-        from: `"GreenBox 🌱" <${process.env.MAIL_USER}>`,
-        to: toEmail,
-        subject,
-        html,
-      };
-      try {
-        await this.transporter.sendMail(mailOptions);
-        this.logger.log(`✅ Correo enviado a ${toEmail} con código ${code} usando Gmail SMTP`);
-      } catch (error) {
-        this.logger.error(`❌ Error enviando correo a ${toEmail} con Gmail SMTP: ${error.message}`);
-        throw error;
-      }
     } else {
-      this.logger.warn('⚠️ No se ha inicializado ningún servicio de correo válido.');
+      const transporter = await this.getTransporter();
+      if (transporter) {
+        const mailOptions = {
+          from: `"GreenBox 🌱" <${process.env.MAIL_USER}>`,
+          to: toEmail,
+          subject,
+          html,
+        };
+        try {
+          await transporter.sendMail(mailOptions);
+          this.logger.log(`✅ Correo enviado a ${toEmail} con código ${code} usando Gmail SMTP`);
+        } catch (error) {
+          this.logger.error(`❌ Error enviando correo a ${toEmail} con Gmail SMTP: ${error.message}`);
+          throw error;
+        }
+      } else {
+        this.logger.warn('⚠️ No se ha inicializado ningún servicio de correo válido.');
+      }
     }
   }
 }
