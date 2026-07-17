@@ -1,4 +1,4 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Logger } from '@nestjs/common';
+import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards, Logger, NotFoundException, ForbiddenException, InternalServerErrorException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './auth.dto';
 import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
@@ -6,6 +6,7 @@ import { CurrentUser, CurrentUserPayload } from 'src/shared/decorators/current-u
 import { BoxService } from 'src/box/box.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { MailService } from 'src/mail/mail.service';
+import * as admin from 'firebase-admin';
 
 @Controller('auth')
 export class AuthController {
@@ -153,6 +154,84 @@ export class AuthController {
       valid: true,
       message: 'Código de acceso procesado y enviado a tu correo',
       code, // También lo devolvemos en la respuesta como respaldo
+    };
+  }
+
+  @Post('validate-code-login')
+  @HttpCode(HttpStatus.OK)
+  async validateCodeLogin(@Body() dto: { code: string }) {
+    const codeUpper = dto.code.trim().toUpperCase();
+
+    // Buscar la caja por código
+    const box = await this.prisma.box.findUnique({
+      where: { code: codeUpper },
+    });
+
+    if (!box) {
+      throw new NotFoundException('El código del dispositivo no existe');
+    }
+
+    if (!box.userId) {
+      throw new ForbiddenException('Este dispositivo no está vinculado a ningún usuario');
+    }
+
+    // Obtener el usuario de Postgres
+    const user = await this.prisma.user.findUnique({
+      where: { id: box.userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('El usuario del dispositivo no existe en la base de datos');
+    }
+
+    // Generar un token personalizado de Firebase para este usuario
+    let firebaseToken: string;
+    try {
+      firebaseToken = await admin.auth().createCustomToken(user.id);
+    } catch (error) {
+      this.logger.error('Error generando token de Firebase en login por código', error);
+      throw new InternalServerErrorException('Error al iniciar sesión');
+    }
+
+    // Buscar si hay planta activa
+    const activeUserPlant = await this.prisma.userPlant.findFirst({
+      where: { boxId: box.id, userId: user.id, archivedAt: null },
+      include: { plant: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      message: 'Inicio de sesión exitoso con código',
+      data: {
+        firebaseToken,
+        user: {
+          uid: user.id,
+          email: user.email,
+          name: user.name,
+        },
+        box: {
+          id: box.id,
+          code: box.code,
+          locationName: box.locationName,
+          hasLocation: this.boxService.hasLocation(box as any),
+        },
+        userPlantId: activeUserPlant?.id || null,
+        plant: activeUserPlant?.plant
+          ? {
+              id: activeUserPlant.plant.id,
+              name: activeUserPlant.plant.name,
+              category: activeUserPlant.plant.category,
+              minTemperature: activeUserPlant.plant.minTemperature,
+              maxTemperature: activeUserPlant.plant.maxTemperature,
+              minHumidity: activeUserPlant.plant.minHumidity,
+              maxHumidity: activeUserPlant.plant.maxHumidity,
+              lightHours: activeUserPlant.plant.lightHours,
+              minWaterLevel: activeUserPlant.plant.minWaterLevel,
+              minSoilMoisture: activeUserPlant.plant.minSoilMoisture,
+              wateringFrequency: activeUserPlant.plant.wateringFrequency,
+            }
+          : null,
+      },
     };
   }
 }
