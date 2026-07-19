@@ -12,7 +12,7 @@ export interface PlantsByCategory {
 
 @Injectable()
 export class PlantService {
-  constructor(private readonly plantRepository: PlantRepository) {}
+  constructor(private readonly plantRepository: PlantRepository) { }
 
   async getAll(): Promise<PlantsByCategory[]> {
     const plants = await this.plantRepository.findAll();
