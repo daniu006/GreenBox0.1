@@ -10,7 +10,7 @@ export class CreatePlantDto {
   category: string;
 
   @IsOptional()
-  @IsUrl({}, { message: 'La imagen debe ser una URL válida' })
+  @IsString({ message: 'La imagen debe ser una cadena de texto (URL o Base64)' })
   imageUrl?: string;
 
   @IsNumber({}, { message: 'La temperatura mínima debe ser un número' })
