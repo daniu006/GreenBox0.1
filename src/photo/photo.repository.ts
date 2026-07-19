@@ -4,9 +4,11 @@ import { PrismaService } from 'src/shared/prisma/prisma.service';
 
 export interface PlantAiAnalysis {
   healthScore:     number;
+  confidence:      number;
   status:          string;
   observations:    string[];
   recommendations: string[];
+  userNote?:       string;
   analyzedAt:      string;
 }
 

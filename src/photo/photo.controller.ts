@@ -1,4 +1,4 @@
-import {Controller,Post,Get,Param,ParseIntPipe,UseGuards,UseInterceptors,UploadedFile,Query,HttpCode,HttpStatus,BadRequestException,
+import {Controller,Post,Get,Param,Body,ParseIntPipe,UseGuards,UseInterceptors,UploadedFile,Query,HttpCode,HttpStatus,BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -42,8 +42,11 @@ export class PhotoController {
 
   @Post(':id/analyze')
   @HttpCode(HttpStatus.OK)
-  async analyze(@Param('id', ParseIntPipe) id: number) {
-    const data = await this.photoService.analyze(id);
+  async analyze(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { userNote?: string; plantName?: string },
+  ) {
+    const data = await this.photoService.analyze(id, body?.userNote, body?.plantName);
     return { message: 'Análisis completado exitosamente', data };
   }
 
