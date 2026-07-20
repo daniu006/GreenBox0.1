@@ -12,6 +12,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
+import { OptionalFirebaseAuthGuard } from 'src/shared/guards/optional-firebase-auth.guard';
 import { CurrentUser, CurrentUserPayload } from 'src/shared/decorators/current-user.decorator';
 import { PlantService } from './plant.service';
 import { CreatePlantDto, UpdatePlantDto } from './plant.dto';
@@ -21,6 +22,7 @@ export class PlantController {
   constructor(private readonly plantService: PlantService) {}
 
   @Get()
+  @UseGuards(OptionalFirebaseAuthGuard)
   async getAll(@CurrentUser() user?: CurrentUserPayload) {
     const userId = user?.uid;
     const data = await this.plantService.getAll(userId);
@@ -28,6 +30,7 @@ export class PlantController {
   }
 
   @Get('category/:category')
+  @UseGuards(OptionalFirebaseAuthGuard)
   async getByCategory(
     @Param('category') category: string,
     @CurrentUser() user?: CurrentUserPayload,
