@@ -14,8 +14,12 @@ export interface PlantsByCategory {
 export class PlantService {
   constructor(private readonly plantRepository: PlantRepository) { }
 
-  async getAll(): Promise<PlantsByCategory[]> {
-    const plants = await this.plantRepository.findAll();
+  // MODIFICADO: userId opcional
+  async getAll(userId?: string): Promise<PlantsByCategory[]> {
+    const plants = userId 
+      ? await this.plantRepository.findAllForUser(userId)
+      : await this.plantRepository.findGlobalCatalog();
+    
     const grouped = plants.reduce((acc, plant) => {
       if (!acc[plant.category]) acc[plant.category] = [];
       acc[plant.category].push(plant);
@@ -34,18 +38,29 @@ export class PlantService {
     return plant;
   }
 
-  async getByCategory(category: string): Promise<Plant[]> {
+  async getByCategory(category: string, userId?: string): Promise<Plant[]> {
     const validCategory = PLANT_CATEGORIES.find(c => c === category.toLowerCase());
     if (!validCategory) {
       throw new BadRequestException(
         `Categoría inválida. Las categorías válidas son: ${PLANT_CATEGORIES.join(', ')}`,
       );
     }
+    
+    if (userId) {
+      const all = await this.plantRepository.findAllForUser(userId);
+      return all.filter(p => p.category === validCategory);
+    }
+    
     return this.plantRepository.findByCategory(validCategory);
   }
 
-  async create(data: CreatePlantData): Promise<Plant> {
-    return this.plantRepository.create(data);
+  // MODIFICADO: requiere userId y lo asigna automáticamente
+  async create(data: CreatePlantData, userId: string): Promise<Plant> {
+    const dataWithUser: CreatePlantData = {
+      ...data,
+      createdByUserId: userId,
+    };
+    return this.plantRepository.create(dataWithUser);
   }
 
   async update(id: number, data: Partial<CreatePlantData>): Promise<Plant> {

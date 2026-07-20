@@ -14,6 +14,7 @@ export interface Plant {
   minWaterLevel: number;
   minSoilMoisture: number | null;
   wateringFrequency: number;
+  createdByUserId: string | null;
   createdAt: Date;
 }
 
@@ -29,6 +30,7 @@ export interface CreatePlantData {
   minWaterLevel: number;
   minSoilMoisture?: number;
   wateringFrequency: number;
+  createdByUserId?: string;
 }
 
 export const PLANT_CATEGORIES = [
@@ -48,6 +50,29 @@ export class PlantRepository {
     return this.prisma.plant.findMany({
       orderBy: [{ category: 'asc' }, { name: 'asc' }],
     });
+  }
+
+  // NEW: solo catálogo global (createdByUserId = null)
+  async findGlobalCatalog(): Promise<Plant[]> {
+    return this.prisma.plant.findMany({
+      where: { createdByUserId: null },
+      orderBy: [{ category: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  // NEW: plantas personalizadas de un usuario
+  async findCustomByUser(userId: string): Promise<Plant[]> {
+    return this.prisma.plant.findMany({
+      where: { createdByUserId: userId },
+      orderBy: [{ createdAt: 'desc' }],
+    });
+  }
+
+  // NEW: catálogo global + plantas del usuario autenticado
+  async findAllForUser(userId: string): Promise<Plant[]> {
+    const global = await this.findGlobalCatalog();
+    const custom = await this.findCustomByUser(userId);
+    return [...global, ...custom];
   }
 
   async findById(id: number): Promise<Plant | null> {
