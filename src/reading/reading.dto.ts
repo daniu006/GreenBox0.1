@@ -18,7 +18,7 @@ export class CreateReadingDto {
 
   @IsNumber({}, { message: 'Las horas de luz deben ser un número' })
   @Min(0)
-  @Max(24)
+  @Max(100)
   lightHours: number;
 
   @IsNumber({}, { message: 'El nivel de agua debe ser un número' })
@@ -55,7 +55,7 @@ export class SensorDataWsDto {
 
   @IsNumber({}, { message: 'Las horas de luz deben ser un número' })
   @Min(0)
-  @Max(24)
+  @Max(100)
   lightHours: number;
 
   @IsNumber({}, { message: 'El nivel de agua debe ser un número' })
