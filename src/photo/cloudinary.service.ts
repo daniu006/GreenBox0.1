@@ -24,6 +24,7 @@ export class CloudinaryService {
           folder,
           public_id: publicId,
           resource_type: 'image',
+          timeout: 20000,
           transformation: [
             { width: 1080, height: 1080, crop: 'limit' },
             { quality: 'auto:good' },
