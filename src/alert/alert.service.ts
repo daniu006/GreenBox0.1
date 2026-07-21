@@ -50,16 +50,15 @@ export class AlertService {
     // Evitar que la alerta reaparezca inmediatamente (Cooldown de 1 hora)
     const cooldownHours = 1;
     const cooldownTime = new Date(Date.now() - cooldownHours * 60 * 60 * 1000);
-    const recentlyResolved = await this.prisma.alert.findFirst({
+    const recentAlert = await this.prisma.alert.findFirst({
       where: {
         userPlantId,
         type,
-        resolved: true,
         createdAt: { gte: cooldownTime },
       },
     });
 
-    if (recentlyResolved) {
+    if (recentAlert) {
       return null; // Silenciamos esta alerta por 1 hora
     }
 

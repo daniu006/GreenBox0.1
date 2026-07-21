@@ -44,7 +44,7 @@ interface AccumulatedEntry {
   }[];
 }
 
-const AVERAGE_INTERVAL_MS = 15 * 60 * 1000; // 15 minutos
+const AVERAGE_INTERVAL_MS = 5 * 60 * 1000; // 5 minutos
 
 @Injectable()
 export class WebsocketService implements OnModuleInit, OnModuleDestroy {
