@@ -46,7 +46,7 @@ export class GeminiPlantAnalyzer {
     const mimeType = this.getImageMimeType(imageResponse);
 
     const model = this.getGenAI().getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-1.5-flash',
       generationConfig: { responseMimeType: 'application/json' },
     });
 
