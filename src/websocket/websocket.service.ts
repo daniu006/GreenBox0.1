@@ -78,7 +78,7 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
       this.averagingTimer = null;
     }
   }
-  async handleSensorData(data: SensorDataWsDto): Promise<void> {
+  async handleSensorData(data: SensorDataWsDto): Promise<any> {
     const userPlant = await this.prisma.userPlant.findFirst({
       where: { boxId: data.boxId, archivedAt: null },
       include: { plant: true },
@@ -88,7 +88,7 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
       this.logger.warn(
         `[WS] sensor:data ignorado — sin planta activa para box ${data.boxId}`,
       );
-      return;
+      return { status: 'ignored', message: 'Sin planta activa' };
     }
 
     const { id: userPlantId, plant } = userPlant;
@@ -150,6 +150,19 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
     this.logger.log(
       `[WS] sensor:data procesado — userPlant ${userPlantId} (box ${data.boxId}) pump:${command.pump} light:${command.light}`,
     );
+
+    // Retornamos los comandos y la configuración para que el HTTP Polling (ESP32) lo reciba
+    return {
+      status: 'success',
+      commands: {
+        pump: command.pump,
+        light: command.light
+      },
+      config: {
+        lightThreshold: plant.lightHours,
+        soilMoistureThreshold: plant.minSoilMoisture ?? 40.0
+      }
+    };
   }
 
   emitReading(payload: SensorPayload): void {

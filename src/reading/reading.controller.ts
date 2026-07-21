@@ -13,11 +13,20 @@ import {
 } from '@nestjs/common';
 import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
 import { ReadingService, Period } from './reading.service';
-import { CreateReadingDto } from './reading.dto';
+import { CreateReadingDto, SensorDataWsDto } from './reading.dto';
+import { WebsocketService } from 'src/websocket/websocket.service';
 
 @Controller('reading')
 export class ReadingController {
-  constructor(private readonly readingService: ReadingService) {}
+  constructor(
+    private readonly readingService: ReadingService,
+    private readonly websocketService: WebsocketService,
+  ) {}
+
+  @Post('device')
+  async handleDeviceData(@Body() data: SensorDataWsDto) {
+    return this.websocketService.handleSensorData(data);
+  }
 
   @Get(':userPlantId/latest')
   @UseGuards(FirebaseAuthGuard)
