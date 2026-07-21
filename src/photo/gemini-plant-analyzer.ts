@@ -23,7 +23,18 @@ export class GeminiPlantAnalyzer {
     userObservation?: string,
     plantName?: string,
   ): Promise<PlantAiAnalysis> {
-    const imageResponse = await fetch(imageUrl);
+    const fetchController = new AbortController();
+    const fetchTimeoutId = setTimeout(() => fetchController.abort(), 10000);
+
+    let imageResponse;
+    try {
+      imageResponse = await fetch(imageUrl, { signal: fetchController.signal as any });
+    } catch (error) {
+      clearTimeout(fetchTimeoutId);
+      throw new ServiceUnavailableException('Tiempo de espera agotado al descargar la imagen de Cloudinary');
+    }
+    clearTimeout(fetchTimeoutId);
+
     if (!imageResponse.ok) {
       throw new ServiceUnavailableException(
         `No se pudo descargar la imagen para análisis (${imageResponse.status})`,
@@ -52,10 +63,19 @@ Analizá la imagen y devolvé SOLO este JSON, sin texto extra:
   "confianza": "alta | media | baja"
 }`;
 
-    const result = await model.generateContent([
-      { inlineData: { mimeType, data: base64Image } },
-      { text: prompt },
-    ]);
+    let result;
+    try {
+      result = await Promise.race([
+        model.generateContent([
+          { inlineData: { mimeType, data: base64Image } },
+          { text: prompt },
+        ]),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout de Gemini')), 30000))
+      ]) as any;
+    } catch (error) {
+      this.logger.warn(`Error o timeout al llamar a Gemini: ${(error as Error).message}`);
+      throw new ServiceUnavailableException('La API de Gemini tardó demasiado en responder o falló.');
+    }
 
     const analyzedAt = new Date().toISOString();
     const responseText = result.response.text();
