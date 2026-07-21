@@ -1,6 +1,21 @@
-import {Controller,Post,Get,Patch,Delete,Body,Param,ParseIntPipe,UseGuards,HttpCode,HttpStatus,} from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
-import { CurrentUser, CurrentUserPayload } from 'src/shared/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/shared/decorators/current-user.decorator';
 import { UserPlantService } from './user-plant.service';
 import { CreateUserPlantDto } from './user-plant.dto';
 
@@ -22,13 +37,21 @@ export class UserPlantController {
   @Get()
   async getActive(@CurrentUser() user: CurrentUserPayload) {
     const data = await this.userPlantService.getActive(user.uid);
-    return { message: 'Plantas activas obtenidas exitosamente', data, total: data.length };
+    return {
+      message: 'Plantas activas obtenidas exitosamente',
+      data,
+      total: data.length,
+    };
   }
 
   @Get('all')
   async getAll(@CurrentUser() user: CurrentUserPayload) {
     const data = await this.userPlantService.getAll(user.uid);
-    return { message: 'Todas las plantas obtenidas exitosamente', data, total: data.length };
+    return {
+      message: 'Todas las plantas obtenidas exitosamente',
+      data,
+      total: data.length,
+    };
   }
 
   @Patch(':id/archive')

@@ -19,8 +19,6 @@ import { CreateReadingDto } from './reading.dto';
 export class ReadingController {
   constructor(private readonly readingService: ReadingService) {}
 
-  
-
   @Get(':userPlantId/latest')
   @UseGuards(FirebaseAuthGuard)
   async getLatest(@Param('userPlantId', ParseIntPipe) userPlantId: number) {

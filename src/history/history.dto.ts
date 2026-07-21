@@ -10,5 +10,5 @@ export class GetHistoryByPeriodDto {
 
   @IsOptional()
   @IsString()
-  date?: string; 
+  date?: string;
 }

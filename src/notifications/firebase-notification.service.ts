@@ -23,7 +23,9 @@ export class FirebaseNotificationService {
       });
       this.logger.log(`Push notification sent successfully to token: ${token}`);
     } catch (error: any) {
-      this.logger.error(`Failed to send push notification to token: ${token}: ${error.message}`);
+      this.logger.error(
+        `Failed to send push notification to token: ${token}: ${error.message}`,
+      );
     }
   }
 }

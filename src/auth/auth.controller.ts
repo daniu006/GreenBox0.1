@@ -15,7 +15,10 @@ import * as admin from 'firebase-admin';
 import { AuthService } from './auth.service';
 import { RegisterDto, LoginDto } from './auth.dto';
 import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
-import { CurrentUser, CurrentUserPayload } from 'src/shared/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/shared/decorators/current-user.decorator';
 import { BoxService } from 'src/box/box.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { MailService } from 'src/mail/mail.service';
@@ -65,7 +68,11 @@ export class AuthController {
     @Body() dto: { code: string },
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    const result = await this.boxService.validateCode(dto.code, user.uid, user.email);
+    const result = await this.boxService.validateCode(
+      dto.code,
+      user.uid,
+      user.email,
+    );
     return {
       message: 'Dispositivo validado exitosamente',
       data: {
@@ -104,7 +111,9 @@ export class AuthController {
             where: { email: emailLower },
             data: { id: dto.firebaseUid },
           });
-          this.logger.log(`Usuario actualizado con nuevo Firebase ID: ${dto.firebaseUid}`);
+          this.logger.log(
+            `Usuario actualizado con nuevo Firebase ID: ${dto.firebaseUid}`,
+          );
         } else {
           await this.prisma.user.create({
             data: {
@@ -114,7 +123,9 @@ export class AuthController {
               password: '',
             },
           });
-          this.logger.log(`Usuario creado en Postgres desde registro: ${dto.firebaseUid}`);
+          this.logger.log(
+            `Usuario creado en Postgres desde registro: ${dto.firebaseUid}`,
+          );
         }
       }
     }
@@ -133,7 +144,9 @@ export class AuthController {
 
     if (userForBox?.boxes?.length) {
       code = userForBox.boxes[0].code;
-      this.logger.log(`Reutilizando codigo existente ${code} para el correo ${emailLower}`);
+      this.logger.log(
+        `Reutilizando codigo existente ${code} para el correo ${emailLower}`,
+      );
     } else {
       let codeExists = true;
 
@@ -152,7 +165,9 @@ export class AuthController {
           userId: null,
         },
       });
-      this.logger.log(`Generando nuevo codigo ${code} desvinculado para el correo ${emailLower}`);
+      this.logger.log(
+        `Generando nuevo codigo ${code} desvinculado para el correo ${emailLower}`,
+      );
     }
 
     try {
@@ -164,7 +179,9 @@ export class AuthController {
         message: 'Te enviamos tu codigo de acceso al correo registrado.',
       };
     } catch (error: any) {
-      this.logger.error(`Error enviando correo a ${emailLower}: ${error.message}`);
+      this.logger.error(
+        `Error enviando correo a ${emailLower}: ${error.message}`,
+      );
       throw new ServiceUnavailableException(
         'No se pudo enviar el codigo de acceso por correo. Intenta de nuevo en unos minutos.',
       );
@@ -214,7 +231,9 @@ export class AuthController {
             password: '',
           },
         });
-        this.logger.log(`Usuario creado de emergencia en validateCodeLogin: ${user.id}`);
+        this.logger.log(
+          `Usuario creado de emergencia en validateCodeLogin: ${user.id}`,
+        );
       }
 
       await this.prisma.box.update({
@@ -222,7 +241,9 @@ export class AuthController {
         data: { userId: user.id },
       });
       targetUserId = user.id;
-      this.logger.log(`Caja ${box.code} vinculada al usuario ${user.id} exitosamente`);
+      this.logger.log(
+        `Caja ${box.code} vinculada al usuario ${user.id} exitosamente`,
+      );
     }
 
     const user = await this.prisma.user.findUnique({
@@ -239,7 +260,10 @@ export class AuthController {
     try {
       firebaseToken = await admin.auth().createCustomToken(user.id);
     } catch (error) {
-      this.logger.error('Error generando token de Firebase en login por codigo', error);
+      this.logger.error(
+        'Error generando token de Firebase en login por codigo',
+        error,
+      );
       throw new InternalServerErrorException('Error al iniciar sesion');
     }
 
@@ -263,7 +287,7 @@ export class AuthController {
           code: box.code,
           locationName: box.locationName || `Caja de ${user.name}`,
           profileImage: box.profileImage || null,
-          hasLocation: this.boxService.hasLocation(box as any),
+          hasLocation: this.boxService.hasLocation(box),
         },
         userPlantId: activeUserPlant?.id || null,
         plant: activeUserPlant?.plant

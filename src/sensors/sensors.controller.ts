@@ -1,4 +1,10 @@
-import { Controller, Get, Param, ParseIntPipe, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
 import { SensorsService } from './sensors.service';
 

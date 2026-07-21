@@ -1,16 +1,26 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, IsUrl, Min, Max, IsIn, } from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsUrl,
+  Min,
+  Max,
+  IsIn,
+} from 'class-validator';
 
 export class CreatePlantDto {
   @IsString()
   @IsNotEmpty({ message: 'El nombre de la planta es obligatorio' })
   name: string;
 
-  
   @IsString()
   category: string;
 
   @IsOptional()
-  @IsString({ message: 'La imagen debe ser una cadena de texto (URL o Base64)' })
+  @IsString({
+    message: 'La imagen debe ser una cadena de texto (URL o Base64)',
+  })
   imageUrl?: string;
 
   @IsNumber({}, { message: 'La temperatura mínima debe ser un número' })
@@ -70,42 +80,50 @@ export class UpdatePlantDto {
 
   @IsOptional()
   @IsNumber()
-  @Min(-10) @Max(50)
+  @Min(-10)
+  @Max(50)
   minTemperature?: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(-10) @Max(50)
+  @Min(-10)
+  @Max(50)
   maxTemperature?: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(0) @Max(100)
+  @Min(0)
+  @Max(100)
   minHumidity?: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(0) @Max(100)
+  @Min(0)
+  @Max(100)
   maxHumidity?: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(0) @Max(24)
+  @Min(0)
+  @Max(24)
   lightHours?: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(0) @Max(100)
+  @Min(0)
+  @Max(100)
   minWaterLevel?: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(0) @Max(100)
+  @Min(0)
+  @Max(100)
   minSoilMoisture?: number;
 
   @IsOptional()
   @IsNumber()
-  @Min(1) @Max(60)
+  @Min(1)
+  @Max(60)
   wateringFrequency?: number;
 }
 

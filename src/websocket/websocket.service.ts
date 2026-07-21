@@ -1,4 +1,11 @@
-import {forwardRef,Inject, Injectable,Logger,OnModuleDestroy,OnModuleInit,} from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { AlertService } from 'src/alert/alert.service';
 import { AutomaticControlService } from 'src/automatic-control/automatic-control.service';
@@ -6,7 +13,6 @@ import { ReadingService } from 'src/reading/reading.service';
 import { SensorDataWsDto } from 'src/reading/reading.dto';
 import { WebSocketGateway } from './websocket.gateway';
 import { SensorsService } from 'src/sensors/sensors.service';
-
 
 export interface SensorPayload {
   userPlantId: number;
@@ -38,7 +44,6 @@ interface AccumulatedEntry {
   }[];
 }
 
-
 const AVERAGE_INTERVAL_MS = 15 * 60 * 1000; // 15 minutos
 
 @Injectable()
@@ -55,8 +60,7 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
     private readonly automaticControlService: AutomaticControlService,
     private readonly readingService: ReadingService,
     private readonly sensorsService: SensorsService,
-  ){}
-
+  ) {}
 
   onModuleInit(): void {
     this.averagingTimer = setInterval(
@@ -125,7 +129,8 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
 
     this.sensorsService.setActuatorStatus(data.boxId, {
       boxId: data.boxId,
-      boxName: userPlant.nickname ?? userPlant.plant.name ?? `Caja ${data.boxId}`,
+      boxName:
+        userPlant.nickname ?? userPlant.plant.name ?? `Caja ${data.boxId}`,
       led: command.light,
       pump: command.pump,
       wateringCount: newWateringCount,
@@ -153,9 +158,7 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
       'reading:new',
       payload,
     );
-    this.logger.log(
-      `[WS] reading:new → room plant:${payload.userPlantId}`,
-    );
+    this.logger.log(`[WS] reading:new → room plant:${payload.userPlantId}`);
   }
 
   emitCommand(payload: CommandPayload): void {
@@ -197,7 +200,7 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
     }
 
     const snapshot = new Map(this.accumulated);
-    this.accumulated.clear(); 
+    this.accumulated.clear();
 
     for (const [boxId, entry] of snapshot) {
       try {
@@ -215,9 +218,7 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
     }
   }
 
-  private calculateAverage(
-    readings: AccumulatedEntry['readings'],
-  ): {
+  private calculateAverage(readings: AccumulatedEntry['readings']): {
     temperature: number;
     humidity: number;
     soilMoisture: number;
@@ -233,15 +234,21 @@ export class WebsocketService implements OnModuleInit, OnModuleDestroy {
         lightHours: acc.lightHours + r.lightHours,
         waterLevel: acc.waterLevel + r.waterLevel,
       }),
-      { temperature: 0, humidity: 0, soilMoisture: 0, lightHours: 0, waterLevel: 0 },
+      {
+        temperature: 0,
+        humidity: 0,
+        soilMoisture: 0,
+        lightHours: 0,
+        waterLevel: 0,
+      },
     );
 
     return {
-      temperature:  Math.round((sum.temperature  / count) * 100) / 100,
-      humidity:     Math.round((sum.humidity     / count) * 100) / 100,
+      temperature: Math.round((sum.temperature / count) * 100) / 100,
+      humidity: Math.round((sum.humidity / count) * 100) / 100,
       soilMoisture: Math.round((sum.soilMoisture / count) * 100) / 100,
-      lightHours:   Math.round((sum.lightHours   / count) * 100) / 100,
-      waterLevel:   Math.round((sum.waterLevel   / count) * 100) / 100,
+      lightHours: Math.round((sum.lightHours / count) * 100) / 100,
+      waterLevel: Math.round((sum.waterLevel / count) * 100) / 100,
     };
   }
 

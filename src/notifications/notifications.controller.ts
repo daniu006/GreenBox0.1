@@ -1,6 +1,20 @@
-import { Controller, Get, Patch, Delete, Param, ParseIntPipe, UseGuards, HttpCode, HttpStatus, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Delete,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  Body,
+} from '@nestjs/common';
 import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
-import { CurrentUser, CurrentUserPayload } from 'src/shared/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/shared/decorators/current-user.decorator';
 import { AlertService } from 'src/alert/alert.service';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 
@@ -22,9 +36,12 @@ export class NotificationsController {
 
     const alerts = await this.alertService.getAll(userPlantId);
 
-    return alerts.map(alert => ({
+    return alerts.map((alert) => ({
       id: String(alert.id),
-      type: alert.type === 'water' || alert.type === 'soilMoisture' ? 'reminder' : 'alert',
+      type:
+        alert.type === 'water' || alert.type === 'soilMoisture'
+          ? 'reminder'
+          : 'alert',
       priority: alert.type === 'water' ? 'medium' : 'high',
       title: this.getAlertTitle(alert.type),
       message: alert.message,
@@ -45,7 +62,7 @@ export class NotificationsController {
     if (!userPlant) return [];
 
     const alerts = await this.alertService.getActive(userPlant.id);
-    return alerts.map(alert => ({
+    return alerts.map((alert) => ({
       id: String(alert.id),
       type: 'alert',
       priority: 'high',
@@ -90,9 +107,12 @@ export class NotificationsController {
     return { success: true };
   }
 
-  private async resolveUserPlantId(id: string, userId: string): Promise<number | null> {
+  private async resolveUserPlantId(
+    id: string,
+    userId: string,
+  ): Promise<number | null> {
     const numericId = parseInt(id, 10);
-    
+
     if (!isNaN(numericId)) {
       const up = await this.prisma.userPlant.findFirst({
         where: { id: numericId, userId },
@@ -119,11 +139,16 @@ export class NotificationsController {
 
   private getAlertTitle(type: string): string {
     switch (type) {
-      case 'temperature': return 'Alerta de Temperatura';
-      case 'humidity': return 'Alerta de Humedad';
-      case 'water': return 'Nivel de Agua Bajo';
-      case 'soilMoisture': return 'Humedad de Suelo Baja';
-      default: return 'Alerta de GREENBOX';
+      case 'temperature':
+        return 'Alerta de Temperatura';
+      case 'humidity':
+        return 'Alerta de Humedad';
+      case 'water':
+        return 'Nivel de Agua Bajo';
+      case 'soilMoisture':
+        return 'Humedad de Suelo Baja';
+      default:
+        return 'Alerta de GREENBOX';
     }
   }
 }

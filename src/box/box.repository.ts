@@ -15,28 +15,28 @@ export interface Box {
 
 @Injectable()
 export class BoxRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async findByCode(code: string): Promise<Box | null> {
-    return this.prisma.box.findUnique({ where: { code } }) as any;
+    return this.prisma.box.findUnique({ where: { code } });
   }
 
   async findById(id: number): Promise<Box | null> {
-    return this.prisma.box.findUnique({ where: { id } }) as any;
+    return this.prisma.box.findUnique({ where: { id } });
   }
 
   async findByUserId(userId: string): Promise<Box[]> {
     return this.prisma.box.findMany({
       where: { userId },
       orderBy: { createdAt: 'asc' },
-    }) as any;
+    });
   }
 
   async assignToUser(boxId: number, userId: string): Promise<Box> {
     return this.prisma.box.update({
       where: { id: boxId },
       data: { userId },
-    }) as any;
+    });
   }
 
   async updateLocation(
@@ -48,7 +48,7 @@ export class BoxRepository {
     return this.prisma.box.update({
       where: { id: boxId },
       data: { latitude, longitude, locationName },
-    }) as any;
+    });
   }
 
   async addFcmToken(boxId: number, token: string): Promise<void> {
@@ -65,7 +65,7 @@ export class BoxRepository {
     for (const box of boxes) {
       await this.prisma.box.update({
         where: { id: box.id },
-        data: { fcmTokens: { set: box.fcmTokens.filter(t => t !== token) } },
+        data: { fcmTokens: { set: box.fcmTokens.filter((t) => t !== token) } },
       });
     }
   }

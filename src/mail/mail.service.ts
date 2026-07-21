@@ -71,7 +71,11 @@ export class MailService {
     return this.transporter;
   }
 
-  async sendBoxCode(toEmail: string, userName: string, code: string): Promise<void> {
+  async sendBoxCode(
+    toEmail: string,
+    userName: string,
+    code: string,
+  ): Promise<void> {
     const subject = 'Tu codigo de acceso GreenBox';
     const html = `
       <!DOCTYPE html>
@@ -145,7 +149,9 @@ export class MailService {
 
       if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errText}`);
+        throw new Error(
+          `HTTP ${response.status}: ${response.statusText} - ${errText}`,
+        );
       }
 
       const resData: any = await response.json();
@@ -180,7 +186,9 @@ export class MailService {
 
       if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${response.statusText} - ${errText}`);
+        throw new Error(
+          `HTTP ${response.status}: ${response.statusText} - ${errText}`,
+        );
       }
 
       this.logger.log(
@@ -198,10 +206,14 @@ export class MailService {
       });
 
       if (response.error) {
-        throw new Error(response.error.message || 'Resend no pudo enviar el correo');
+        throw new Error(
+          response.error.message || 'Resend no pudo enviar el correo',
+        );
       }
 
-      this.logger.log(`Correo enviado a ${toEmail} con codigo ${code} usando Resend`);
+      this.logger.log(
+        `Correo enviado a ${toEmail} con codigo ${code} usando Resend`,
+      );
       return;
     }
 
@@ -214,7 +226,9 @@ export class MailService {
         html,
       });
 
-      this.logger.log(`Correo enviado a ${toEmail} con codigo ${code} usando Gmail SMTP`);
+      this.logger.log(
+        `Correo enviado a ${toEmail} con codigo ${code} usando Gmail SMTP`,
+      );
       return;
     }
 

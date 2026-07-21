@@ -23,7 +23,7 @@ export class AutomaticControlService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly openMeteoService: OpenMeteoService,
-  ) { }
+  ) {}
 
   async evaluate(
     userPlantId: number,
@@ -39,7 +39,9 @@ export class AutomaticControlService {
     }
 
     if (userPlant.archivedAt !== null) {
-      this.logger.warn(`UserPlant ${userPlantId} está archivada — sin control automático`);
+      this.logger.warn(
+        `UserPlant ${userPlantId} está archivada — sin control automático`,
+      );
       return { pump: false, light: false, reason: 'Planta archivada' };
     }
 
@@ -67,30 +69,43 @@ export class AutomaticControlService {
             pump = false;
             reasons.push(
               `Riego suspendido por lluvia o calor extremo ` +
-              `(clima: ${weather.weatherDesc}, ${weather.temperature}°C)`,
+                `(clima: ${weather.weatherDesc}, ${weather.temperature}°C)`,
             );
             this.logger.warn(
               `[userPlant ${userPlantId}] Riego cancelado por clima: ` +
-              `${weather.weatherDesc} (código ${weather.weatherCode})`,
+                `${weather.weatherDesc} (código ${weather.weatherCode})`,
             );
           } else {
-            reasons.push(`Suelo seco (${reading.soilMoisture}% < ${minSoil}%) — activando bomba`);
+            reasons.push(
+              `Suelo seco (${reading.soilMoisture}% < ${minSoil}%) — activando bomba`,
+            );
           }
         } catch (e) {
           // Si falla la consulta del clima, regar igual (fail-safe)
-          this.logger.warn(`[userPlant ${userPlantId}] No se pudo consultar el clima: ${e.message}`);
-          reasons.push(`Suelo seco (${reading.soilMoisture}% < ${minSoil}%) — activando bomba (sin datos de clima)`);
+          this.logger.warn(
+            `[userPlant ${userPlantId}] No se pudo consultar el clima: ${e.message}`,
+          );
+          reasons.push(
+            `Suelo seco (${reading.soilMoisture}% < ${minSoil}%) — activando bomba (sin datos de clima)`,
+          );
         }
       } else {
         // Sin ubicación del box configurada → regar normalmente
-        reasons.push(`Suelo seco (${reading.soilMoisture}% < ${minSoil}%) — activando bomba`);
+        reasons.push(
+          `Suelo seco (${reading.soilMoisture}% < ${minSoil}%) — activando bomba`,
+        );
       }
     } else if (soilDry && !hasWater) {
-      reasons.push(`Suelo seco (${reading.soilMoisture}%) pero sin agua (${reading.waterLevel}%)`);
+      reasons.push(
+        `Suelo seco (${reading.soilMoisture}%) pero sin agua (${reading.waterLevel}%)`,
+      );
     }
 
-    const reason = reasons.length > 0 ? reasons.join(' | ') : 'Todos los parámetros OK';
-    this.logger.log(`[userPlant ${userPlantId}] pump: ${pump}, light: false — ${reason}`);
+    const reason =
+      reasons.length > 0 ? reasons.join(' | ') : 'Todos los parámetros OK';
+    this.logger.log(
+      `[userPlant ${userPlantId}] pump: ${pump}, light: false — ${reason}`,
+    );
 
     return { pump, light: false, reason };
   }

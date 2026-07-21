@@ -1,4 +1,12 @@
-import {Controller,Get,Post,Param,Query,ParseIntPipe,UseGuards,} from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  ParseIntPipe,
+  UseGuards,
+} from '@nestjs/common';
 import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
 import { StatisticService } from './statistic.service';
 
@@ -25,7 +33,11 @@ export class StatisticController {
   @Get(':userPlantId')
   async getAll(@Param('userPlantId', ParseIntPipe) userPlantId: number) {
     const data = await this.statisticService.getAll(userPlantId);
-    return { message: 'Estadísticas obtenidas exitosamente', data, total: data.length };
+    return {
+      message: 'Estadísticas obtenidas exitosamente',
+      data,
+      total: data.length,
+    };
   }
 
   @Post(':userPlantId/calculate')

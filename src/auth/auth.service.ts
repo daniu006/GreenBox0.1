@@ -1,4 +1,10 @@
-import {Injectable,ConflictException,UnauthorizedException,InternalServerErrorException,Logger,} from '@nestjs/common';
+import {
+  Injectable,
+  ConflictException,
+  UnauthorizedException,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import * as admin from 'firebase-admin';
 import * as bcrypt from 'bcrypt';
 import { AuthRepository } from './auth.repository';
@@ -50,7 +56,12 @@ export class AuthService {
       passwordHash,
     );
 
-    return { uid: user.id, email: user.email, name: user.name, token: firebaseToken };
+    return {
+      uid: user.id,
+      email: user.email,
+      name: user.name,
+      token: firebaseToken,
+    };
   }
 
   async login(dto: LoginDto): Promise<AuthResult> {
@@ -72,24 +83,34 @@ export class AuthService {
       throw new UnauthorizedException('Error al iniciar sesión');
     }
 
-    return { uid: user.id, email: user.email, name: user.name, token: firebaseToken };
+    return {
+      uid: user.id,
+      email: user.email,
+      name: user.name,
+      token: firebaseToken,
+    };
   }
   async getIdToken(dto: LoginDto): Promise<AuthResult> {
-  const apiKey = process.env.FIREBASE_API_KEY;
-  const response = await fetch(
-    `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: dto.email,
-        password: dto.password,
-        returnSecureToken: true,
-      }),
-    }
-  );
-  const data = await response.json() as any;
-  if (data.error) throw new UnauthorizedException('Credenciales incorrectas');
-  return { uid: data.localId, email: data.email, name: data.displayName, token: data.idToken };
-}
+    const apiKey = process.env.FIREBASE_API_KEY;
+    const response = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: dto.email,
+          password: dto.password,
+          returnSecureToken: true,
+        }),
+      },
+    );
+    const data = await response.json();
+    if (data.error) throw new UnauthorizedException('Credenciales incorrectas');
+    return {
+      uid: data.localId,
+      email: data.email,
+      name: data.displayName,
+      token: data.idToken,
+    };
+  }
 }

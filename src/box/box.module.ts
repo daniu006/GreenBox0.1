@@ -8,7 +8,12 @@ import { WebsocketModule } from '../websocket/websocket.module';
 import { PhotoModule } from '../photo/photo.module';
 
 @Module({
-  imports: [forwardRef(() => UserPlantModule), SensorsModule, WebsocketModule, PhotoModule],
+  imports: [
+    forwardRef(() => UserPlantModule),
+    SensorsModule,
+    WebsocketModule,
+    PhotoModule,
+  ],
   controllers: [BoxController],
   providers: [BoxService, BoxRepository],
   exports: [BoxService, BoxRepository],

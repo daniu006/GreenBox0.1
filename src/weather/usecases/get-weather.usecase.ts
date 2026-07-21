@@ -8,14 +8,18 @@ export class GetWeatherUseCase implements IGetWeatherUseCase {
   private readonly logger = new Logger(GetWeatherUseCase.name);
   constructor(
     private readonly openMeteoService: OpenMeteoService,
-    private readonly prisma:           PrismaService,
+    private readonly prisma: PrismaService,
   ) {}
   async execute(
-    latitude:     number,
-    longitude:    number,
+    latitude: number,
+    longitude: number,
     locationName: string = 'Ubicación del Box',
   ): Promise<WeatherData> {
-    return this.openMeteoService.getCurrentWeather(latitude, longitude, locationName);
+    return this.openMeteoService.getCurrentWeather(
+      latitude,
+      longitude,
+      locationName,
+    );
   }
   async executeByBoxId(boxId: number): Promise<WeatherData> {
     const box = await this.prisma.box.findUnique({ where: { id: boxId } });
@@ -25,7 +29,7 @@ export class GetWeatherUseCase implements IGetWeatherUseCase {
     if (!box.latitude || !box.longitude) {
       throw new NotFoundException(
         `El Box ${boxId} no tiene ubicación configurada. ` +
-        'Actualiza las coordenadas desde la app.',
+          'Actualiza las coordenadas desde la app.',
       );
     }
     return this.openMeteoService.getCurrentWeather(

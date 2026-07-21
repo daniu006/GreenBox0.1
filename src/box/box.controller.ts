@@ -1,11 +1,32 @@
-import { Controller, Post, Patch, Get, Delete, Body, Param, ParseIntPipe, UseGuards, HttpCode, HttpStatus, NotFoundException } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Patch,
+  Get,
+  Delete,
+  Body,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  NotFoundException,
+} from '@nestjs/common';
 import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
-import { CurrentUser, CurrentUserPayload } from 'src/shared/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/shared/decorators/current-user.decorator';
 import { BoxService } from './box.service';
 import { UserPlantService } from 'src/user-plant/user-plant.service';
 import { SensorsService } from 'src/sensors/sensors.service';
 import { WebSocketGateway } from 'src/websocket/websocket.gateway';
-import { ValidateCodeDto, UpdateLocationDto, RegisterFcmTokenDto, RemoveFcmTokenDto } from './box.dto';
+import {
+  ValidateCodeDto,
+  UpdateLocationDto,
+  RegisterFcmTokenDto,
+  RemoveFcmTokenDto,
+} from './box.dto';
 
 @Controller('box')
 @UseGuards(FirebaseAuthGuard)
@@ -15,7 +36,7 @@ export class BoxController {
     private readonly userPlantService: UserPlantService,
     private readonly sensorsService: SensorsService,
     private readonly websocketGateway: WebSocketGateway,
-  ) { }
+  ) {}
 
   @Post('validate')
   @HttpCode(HttpStatus.OK)
@@ -23,7 +44,11 @@ export class BoxController {
     @Body() dto: ValidateCodeDto,
     @CurrentUser() user: CurrentUserPayload,
   ) {
-    const result = await this.boxService.validateCode(dto.code, user.uid, user.email);
+    const result = await this.boxService.validateCode(
+      dto.code,
+      user.uid,
+      user.email,
+    );
     return {
       message: 'Dispositivo validado exitosamente',
       data: {
@@ -45,7 +70,7 @@ export class BoxController {
     const boxes = await this.boxService.getByUser(user.uid);
     return {
       message: 'Dispositivos obtenidos exitosamente',
-      data: boxes.map(b => ({
+      data: boxes.map((b) => ({
         id: b.id,
         code: b.code,
         locationName: b.locationName,
@@ -68,21 +93,30 @@ export class BoxController {
   @Patch(':id')
   async updateBox(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: { name?: string; profileImage?: string | null; plantId?: number },
+    @Body()
+    dto: { name?: string; profileImage?: string | null; plantId?: number },
     @CurrentUser() user: CurrentUserPayload,
   ) {
     let userPlant: any = null;
     let box: any = null;
 
     if (dto.plantId) {
-      userPlant = await this.userPlantService.create({
-        boxId: id,
-        plantId: dto.plantId,
-      }, user.uid);
+      userPlant = await this.userPlantService.create(
+        {
+          boxId: id,
+          plantId: dto.plantId,
+        },
+        user.uid,
+      );
     }
 
     if (dto.name !== undefined || dto.profileImage !== undefined) {
-      box = await this.boxService.updateProfile(id, user.uid, dto.name, dto.profileImage);
+      box = await this.boxService.updateProfile(
+        id,
+        user.uid,
+        dto.name,
+        dto.profileImage,
+      );
     }
 
     return {

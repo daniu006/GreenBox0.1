@@ -1,4 +1,17 @@
-import {Controller,Post,Get,Param,Body,ParseIntPipe,UseGuards,UseInterceptors,UploadedFile,Query,HttpCode,HttpStatus,BadRequestException,
+import {
+  Controller,
+  Post,
+  Get,
+  Param,
+  Body,
+  ParseIntPipe,
+  UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  Query,
+  HttpCode,
+  HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
@@ -19,7 +32,9 @@ export class PhotoController {
         const allowed = ['image/jpeg', 'image/png', 'image/webp'];
         if (!allowed.includes(file.mimetype)) {
           return cb(
-            new BadRequestException('Solo se permiten imágenes JPEG, PNG o WebP'),
+            new BadRequestException(
+              'Solo se permiten imágenes JPEG, PNG o WebP',
+            ),
             false,
           );
         }
@@ -33,7 +48,9 @@ export class PhotoController {
     @Query('type') type: string,
   ) {
     if (!file) {
-      throw new BadRequestException('Se requiere un archivo de imagen (campo "file")');
+      throw new BadRequestException(
+        'Se requiere un archivo de imagen (campo "file")',
+      );
     }
     const photoType = type === 'initial' ? 'initial' : 'report';
     const data = await this.photoService.upload(userPlantId, file, photoType);
@@ -46,7 +63,11 @@ export class PhotoController {
     @Param('id', ParseIntPipe) id: number,
     @Body() body: { userNote?: string; plantName?: string },
   ) {
-    const data = await this.photoService.analyze(id, body?.userNote, body?.plantName);
+    const data = await this.photoService.analyze(
+      id,
+      body?.userNote,
+      body?.plantName,
+    );
     return { message: 'Análisis completado exitosamente', data };
   }
 

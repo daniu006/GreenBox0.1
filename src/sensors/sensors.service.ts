@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { ReadingService, Period } from 'src/reading/reading.service';
 
@@ -69,9 +73,12 @@ export class SensorsService {
       throw new BadRequestException('Período inválido. Use 24h, 7d o 30d');
     }
 
-    const result = await this.readingService.getByPeriod(userPlant.id, mappedPeriod);
-    
-    return result.readings.map(r => ({
+    const result = await this.readingService.getByPeriod(
+      userPlant.id,
+      mappedPeriod,
+    );
+
+    return result.readings.map((r) => ({
       timestamp: r.timestamp.toISOString(),
       temperature: r.temperature,
       humidity: r.humidity,

@@ -16,10 +16,10 @@ export interface ReadingWithCommands {
 }
 
 export interface PeriodPeaks {
-  temperature:  { max: number; maxAt: Date; min: number; minAt: Date };
-  humidity:     { max: number; maxAt: Date; min: number; minAt: Date };
+  temperature: { max: number; maxAt: Date; min: number; minAt: Date };
+  humidity: { max: number; maxAt: Date; min: number; minAt: Date };
   soilMoisture: { max: number; maxAt: Date; min: number; minAt: Date };
-  waterLevel:   { max: number; maxAt: Date; min: number; minAt: Date };
+  waterLevel: { max: number; maxAt: Date; min: number; minAt: Date };
 }
 
 export interface PeriodReadings {
@@ -83,8 +83,12 @@ export class ReadingService {
       readings = await this.readingRepository.findByDay(userPlantId, refDate);
     } else if (period === 'week') {
       const start = this.getWeekStart(refDate);
-      const end   = this.getWeekEnd(refDate);
-      readings = await this.readingRepository.findByWeek(userPlantId, start, end);
+      const end = this.getWeekEnd(refDate);
+      readings = await this.readingRepository.findByWeek(
+        userPlantId,
+        start,
+        end,
+      );
     } else if (period === 'month') {
       readings = await this.readingRepository.findByMonth(
         userPlantId,
@@ -103,12 +107,21 @@ export class ReadingService {
   private calculatePeaks(readings: Reading[]): PeriodPeaks {
     if (readings.length === 0) {
       const empty = { max: 0, maxAt: new Date(), min: 0, minAt: new Date() };
-      return { temperature: empty, humidity: empty, soilMoisture: empty, waterLevel: empty };
+      return {
+        temperature: empty,
+        humidity: empty,
+        soilMoisture: empty,
+        waterLevel: empty,
+      };
     }
 
     const findPeaks = (getValue: (r: Reading) => number) => {
-      const maxR = readings.reduce((a, b) => getValue(a) > getValue(b) ? a : b);
-      const minR = readings.reduce((a, b) => getValue(a) < getValue(b) ? a : b);
+      const maxR = readings.reduce((a, b) =>
+        getValue(a) > getValue(b) ? a : b,
+      );
+      const minR = readings.reduce((a, b) =>
+        getValue(a) < getValue(b) ? a : b,
+      );
       return {
         max: getValue(maxR),
         maxAt: maxR.timestamp,
@@ -118,10 +131,10 @@ export class ReadingService {
     };
 
     return {
-      temperature:  findPeaks(r => r.temperature),
-      humidity:     findPeaks(r => r.humidity),
-      soilMoisture: findPeaks(r => r.soilMoisture),
-      waterLevel:   findPeaks(r => r.waterLevel),
+      temperature: findPeaks((r) => r.temperature),
+      humidity: findPeaks((r) => r.humidity),
+      soilMoisture: findPeaks((r) => r.soilMoisture),
+      waterLevel: findPeaks((r) => r.waterLevel),
     };
   }
 

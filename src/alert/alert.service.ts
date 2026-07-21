@@ -40,7 +40,10 @@ export class AlertService {
       return null;
     }
 
-    const existing = await this.alertRepository.findUnresolved(userPlantId, type);
+    const existing = await this.alertRepository.findUnresolved(
+      userPlantId,
+      type,
+    );
     if (existing) return null;
 
     const alert = await this.alertRepository.create(userPlantId, type, message);
@@ -50,12 +53,12 @@ export class AlertService {
 
   async getActive(userPlantId: number): Promise<AlertFormatted[]> {
     const alerts = await this.alertRepository.findActive(userPlantId);
-    return alerts.map(a => this.format(a));
+    return alerts.map((a) => this.format(a));
   }
 
   async getAll(userPlantId: number): Promise<AlertFormatted[]> {
     const alerts = await this.alertRepository.findAll(userPlantId);
-    return alerts.map(a => this.format(a));
+    return alerts.map((a) => this.format(a));
   }
 
   async resolve(id: number, userId: string): Promise<AlertFormatted> {
@@ -80,7 +83,10 @@ export class AlertService {
     await this.alertRepository.delete(id);
   }
 
-  private async verifyOwnership(userPlantId: number, userId: string): Promise<void> {
+  private async verifyOwnership(
+    userPlantId: number,
+    userId: string,
+  ): Promise<void> {
     const userPlant = await this.prisma.userPlant.findUnique({
       where: { id: userPlantId },
       select: { userId: true },
@@ -90,7 +96,10 @@ export class AlertService {
     }
   }
 
-  private async sendPushNotification(userPlantId: number, alert: Alert): Promise<void> {
+  private async sendPushNotification(
+    userPlantId: number,
+    alert: Alert,
+  ): Promise<void> {
     try {
       const userPlant = await this.prisma.userPlant.findUnique({
         where: { id: userPlantId },
@@ -106,7 +115,7 @@ export class AlertService {
       const body = `${plantName} — ${alert.message}`;
 
       await Promise.all(
-        userPlant.box.fcmTokens.map(token =>
+        userPlant.box.fcmTokens.map((token) =>
           this.firebaseNotification.sendPushNotification(token, title, body, {
             userPlantId: userPlantId.toString(),
             alertId: alert.id.toString(),
@@ -150,11 +159,11 @@ export class AlertService {
 
   private getTypeLabel(type: string): string {
     const labels: Record<string, string> = {
-      temperature:  'Temperatura',
-      humidity:     'Humedad',
-      water:        'Nivel de agua',
+      temperature: 'Temperatura',
+      humidity: 'Humedad',
+      water: 'Nivel de agua',
       soilMoisture: 'Humedad del suelo',
-      light:        'Luz',
+      light: 'Luz',
     };
     return labels[type] ?? type;
   }

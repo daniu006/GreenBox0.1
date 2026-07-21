@@ -16,7 +16,7 @@ export interface History {
 }
 
 export const HISTORY_TYPES = ['daily', 'weekly', 'monthly'] as const;
-export type HistoryType = typeof HISTORY_TYPES[number];
+export type HistoryType = (typeof HISTORY_TYPES)[number];
 
 export interface SaveHistoryData {
   userPlantId: number;
@@ -56,7 +56,11 @@ export class HistoryRepository {
     });
   }
 
-  async findByMonth(userPlantId: number, year: number, month: number): Promise<History[]> {
+  async findByMonth(
+    userPlantId: number,
+    year: number,
+    month: number,
+  ): Promise<History[]> {
     const start = new Date(year, month - 1, 1, 0, 0, 0);
     const end = new Date(year, month, 0, 23, 59, 59);
     return this.prisma.history.findMany({

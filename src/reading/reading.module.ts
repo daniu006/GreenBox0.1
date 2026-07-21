@@ -7,9 +7,9 @@ import { forwardRef } from '@nestjs/common';
 import { WebsocketModule } from 'src/websocket/websocket.module';
 
 @Module({
-  imports:     [PrismaModule, forwardRef(() => WebsocketModule)],
+  imports: [PrismaModule, forwardRef(() => WebsocketModule)],
   controllers: [ReadingController],
-  providers:   [ReadingService, ReadingRepository],
-  exports:     [ReadingService, ReadingRepository],
+  providers: [ReadingService, ReadingRepository],
+  exports: [ReadingService, ReadingRepository],
 })
 export class ReadingModule {}

@@ -7,4 +7,4 @@ import { WeatherModule } from 'src/weather/weather.module';
   providers: [AutomaticControlService],
   exports: [AutomaticControlService],
 })
-export class AutomaticControlModule { }
+export class AutomaticControlModule {}

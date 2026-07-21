@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  Logger,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
 import { StatisticRepository, Statistic } from './statistic.repository';
 
@@ -17,7 +13,7 @@ export class StatisticService {
   constructor(
     private readonly statisticRepository: StatisticRepository,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   async calculate(userPlantId: number): Promise<StatisticFormatted | null> {
     const userPlant = await this.prisma.userPlant.findUnique({
@@ -38,22 +34,32 @@ export class StatisticService {
     });
 
     if (readings.length === 0) {
-      this.logger.warn(`Sin lecturas para calcular estadísticas de userPlant ${userPlantId}`);
+      this.logger.warn(
+        `Sin lecturas para calcular estadísticas de userPlant ${userPlantId}`,
+      );
       return null;
     }
 
     const plant = userPlant.plant;
     const count = readings.length;
 
-    const avgTemperature = readings.reduce((s, r) => s + r.temperature, 0) / count;
+    const avgTemperature =
+      readings.reduce((s, r) => s + r.temperature, 0) / count;
     const avgHumidity = readings.reduce((s, r) => s + r.humidity, 0) / count;
-    const avgLightHours = readings.reduce((s, r) => s + r.lightHours, 0) / count;
-    const avgWaterLevel = readings.reduce((s, r) => s + r.waterLevel, 0) / count;
-    const avgSoilMoisture = readings.reduce((s, r) => s + r.soilMoisture, 0) / count;
+    const avgLightHours =
+      readings.reduce((s, r) => s + r.lightHours, 0) / count;
+    const avgWaterLevel =
+      readings.reduce((s, r) => s + r.waterLevel, 0) / count;
+    const avgSoilMoisture =
+      readings.reduce((s, r) => s + r.soilMoisture, 0) / count;
 
     const estimatedHealth = this.calculateHealth(
-      avgTemperature, avgHumidity, avgWaterLevel,
-      avgLightHours, avgSoilMoisture, plant,
+      avgTemperature,
+      avgHumidity,
+      avgWaterLevel,
+      avgLightHours,
+      avgSoilMoisture,
+      plant,
     );
 
     const statistic = await this.statisticRepository.upsert({
@@ -67,7 +73,9 @@ export class StatisticService {
       estimatedHealth: parseFloat(estimatedHealth.toFixed(2)),
     });
 
-    this.logger.log(`Estadísticas calculadas para userPlant ${userPlantId} — salud: ${estimatedHealth.toFixed(1)}%`);
+    this.logger.log(
+      `Estadísticas calculadas para userPlant ${userPlantId} — salud: ${estimatedHealth.toFixed(1)}%`,
+    );
     return this.format(statistic);
   }
 
@@ -78,11 +86,17 @@ export class StatisticService {
 
   async getAll(userPlantId: number): Promise<StatisticFormatted[]> {
     const statistics = await this.statisticRepository.findAll(userPlantId);
-    return statistics.map(s => this.format(s));
+    return statistics.map((s) => this.format(s));
   }
 
-  async getByWeek(userPlantId: number, week: number): Promise<StatisticFormatted | null> {
-    const statistic = await this.statisticRepository.findByWeek(userPlantId, week);
+  async getByWeek(
+    userPlantId: number,
+    week: number,
+  ): Promise<StatisticFormatted | null> {
+    const statistic = await this.statisticRepository.findByWeek(
+      userPlantId,
+      week,
+    );
     return statistic ? this.format(statistic) : null;
   }
 
@@ -109,12 +123,16 @@ export class StatisticService {
     plant: any,
   ): number {
     let tempScore: number;
-    if (avgTemperature >= plant.minTemperature && avgTemperature <= plant.maxTemperature) {
+    if (
+      avgTemperature >= plant.minTemperature &&
+      avgTemperature <= plant.maxTemperature
+    ) {
       tempScore = 100;
     } else {
-      const deviation = avgTemperature < plant.minTemperature
-        ? plant.minTemperature - avgTemperature
-        : avgTemperature - plant.maxTemperature;
+      const deviation =
+        avgTemperature < plant.minTemperature
+          ? plant.minTemperature - avgTemperature
+          : avgTemperature - plant.maxTemperature;
       tempScore = Math.max(0, 100 - deviation * 10);
     }
 
@@ -122,33 +140,40 @@ export class StatisticService {
     if (avgHumidity >= plant.minHumidity && avgHumidity <= plant.maxHumidity) {
       humidityScore = 100;
     } else {
-      const deviation = avgHumidity < plant.minHumidity
-        ? plant.minHumidity - avgHumidity
-        : avgHumidity - plant.maxHumidity;
+      const deviation =
+        avgHumidity < plant.minHumidity
+          ? plant.minHumidity - avgHumidity
+          : avgHumidity - plant.maxHumidity;
       humidityScore = Math.max(0, 100 - deviation * 10);
     }
 
-    const waterScore = avgWaterLevel >= plant.minWaterLevel
-      ? 100 : Math.max(0, (avgWaterLevel / plant.minWaterLevel) * 100);
+    const waterScore =
+      avgWaterLevel >= plant.minWaterLevel
+        ? 100
+        : Math.max(0, (avgWaterLevel / plant.minWaterLevel) * 100);
     const lightScore = Math.min(100, (avgLightHours / plant.lightHours) * 100);
     const minSoil = plant.minSoilMoisture ?? 30;
-    const soilScore = avgSoilMoisture >= minSoil
-      ? 100 : Math.max(0, (avgSoilMoisture / minSoil) * 100);
+    const soilScore =
+      avgSoilMoisture >= minSoil
+        ? 100
+        : Math.max(0, (avgSoilMoisture / minSoil) * 100);
 
     return (
       tempScore * 0.25 +
       humidityScore * 0.25 +
-      waterScore * 0.20 +
+      waterScore * 0.2 +
       lightScore * 0.15 +
       soilScore * 0.15
     );
   }
 
   private getWeekNumber(date: Date): number {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const d = new Date(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+    );
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   }
 }

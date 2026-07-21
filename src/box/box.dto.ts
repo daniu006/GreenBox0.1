@@ -1,4 +1,12 @@
-import {IsString,IsNotEmpty,IsNumber,IsOptional,Min,Max,Length,} from 'class-validator';
+import {
+  IsString,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  Min,
+  Max,
+  Length,
+} from 'class-validator';
 
 export class ValidateCodeDto {
   @IsString()

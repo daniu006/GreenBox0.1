@@ -1,4 +1,14 @@
-import {Controller,Get,Post,Param,Query,ParseIntPipe,UseGuards,HttpCode,HttpStatus,} from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Param,
+  Query,
+  ParseIntPipe,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
 import { HistoryService } from './history.service';
 import { HistoryType } from './history.repository';
@@ -14,7 +24,11 @@ export class HistoryController {
     @Query('period') period: string,
     @Query('date') date?: string,
   ) {
-    const result = await this.historyService.getByPeriod(userPlantId, period, date);
+    const result = await this.historyService.getByPeriod(
+      userPlantId,
+      period,
+      date,
+    );
     return {
       message: `Historial ${period} obtenido exitosamente`,
       data: result,
@@ -27,7 +41,10 @@ export class HistoryController {
     @Param('userPlantId', ParseIntPipe) userPlantId: number,
     @Query('type') type: string,
   ) {
-    const history = await this.historyService.save(userPlantId, type as HistoryType);
+    const history = await this.historyService.save(
+      userPlantId,
+      type as HistoryType,
+    );
     return {
       message: `Historial ${type} guardado exitosamente`,
       data: history,

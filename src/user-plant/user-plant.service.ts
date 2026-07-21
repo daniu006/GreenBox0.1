@@ -3,7 +3,11 @@ import {
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
-import { UserPlantRepository, UserPlant, CreateUserPlantData } from './user-plant.repository';
+import {
+  UserPlantRepository,
+  UserPlant,
+  CreateUserPlantData,
+} from './user-plant.repository';
 import { PlantRepository } from 'src/plant/plant.repository';
 import { BoxRepository } from 'src/box/box.repository';
 import { CreateUserPlantDto } from './user-plant.dto';
@@ -41,10 +45,15 @@ export class UserPlantService {
     private readonly boxRepository: BoxRepository,
   ) {}
 
-  async create(dto: CreateUserPlantDto, userId: string): Promise<UserPlantFormatted> {
+  async create(
+    dto: CreateUserPlantDto,
+    userId: string,
+  ): Promise<UserPlantFormatted> {
     const plantExists = await this.plantRepository.exists(dto.plantId);
     if (!plantExists) {
-      throw new NotFoundException('La planta seleccionada no existe en el catálogo');
+      throw new NotFoundException(
+        'La planta seleccionada no existe en el catálogo',
+      );
     }
 
     const box = await this.boxRepository.findById(dto.boxId);
@@ -52,10 +61,15 @@ export class UserPlantService {
       throw new NotFoundException('Dispositivo no encontrado');
     }
     if (box.userId !== userId) {
-      throw new ForbiddenException('No tienes permiso para usar este dispositivo');
+      throw new ForbiddenException(
+        'No tienes permiso para usar este dispositivo',
+      );
     }
 
-    const activePlant = await this.userPlantRepository.findActiveByBox(dto.boxId, userId);
+    const activePlant = await this.userPlantRepository.findActiveByBox(
+      dto.boxId,
+      userId,
+    );
     if (activePlant) {
       await this.userPlantRepository.archive(activePlant.id);
     }
@@ -72,19 +86,21 @@ export class UserPlantService {
 
   async getActive(userId: string): Promise<UserPlantFormatted[]> {
     const userPlants = await this.userPlantRepository.findActiveByUser(userId);
-    return userPlants.map(up => this.format(up));
+    return userPlants.map((up) => this.format(up));
   }
 
   async getAll(userId: string): Promise<UserPlantFormatted[]> {
     const userPlants = await this.userPlantRepository.findAllByUser(userId);
-    return userPlants.map(up => this.format(up));
+    return userPlants.map((up) => this.format(up));
   }
 
   async archive(id: number, userId: string): Promise<UserPlantFormatted> {
     const userPlant = await this.userPlantRepository.findById(id);
     if (!userPlant) throw new NotFoundException('Planta no encontrada');
     if (userPlant.userId !== userId) {
-      throw new ForbiddenException('No tienes permiso para archivar esta planta');
+      throw new ForbiddenException(
+        'No tienes permiso para archivar esta planta',
+      );
     }
     if (userPlant.archivedAt !== null) {
       throw new ForbiddenException('Esta planta ya está archivada');
@@ -98,7 +114,9 @@ export class UserPlantService {
     const userPlant = await this.userPlantRepository.findById(id);
     if (!userPlant) throw new NotFoundException('Planta no encontrada');
     if (userPlant.userId !== userId) {
-      throw new ForbiddenException('No tienes permiso para eliminar esta planta');
+      throw new ForbiddenException(
+        'No tienes permiso para eliminar esta planta',
+      );
     }
     await this.userPlantRepository.delete(id);
   }

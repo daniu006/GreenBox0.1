@@ -47,14 +47,22 @@ export class ReadingRepository {
     });
   }
 
-  async findByWeek(userPlantId: number, startDate: Date, endDate: Date): Promise<Reading[]> {
+  async findByWeek(
+    userPlantId: number,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<Reading[]> {
     return this.prisma.reading.findMany({
       where: { userPlantId, timestamp: { gte: startDate, lte: endDate } },
       orderBy: { timestamp: 'asc' },
     });
   }
 
-  async findByMonth(userPlantId: number, year: number, month: number): Promise<Reading[]> {
+  async findByMonth(
+    userPlantId: number,
+    year: number,
+    month: number,
+  ): Promise<Reading[]> {
     const start = new Date(year, month - 1, 1, 0, 0, 0);
     const end = new Date(year, month, 0, 23, 59, 59);
     return this.prisma.reading.findMany({
@@ -63,7 +71,11 @@ export class ReadingRepository {
     });
   }
 
-  async findByPeriod(userPlantId: number, startDate: Date, endDate: Date): Promise<Reading[]> {
+  async findByPeriod(
+    userPlantId: number,
+    startDate: Date,
+    endDate: Date,
+  ): Promise<Reading[]> {
     return this.prisma.reading.findMany({
       where: { userPlantId, timestamp: { gte: startDate, lte: endDate } },
       orderBy: { timestamp: 'asc' },

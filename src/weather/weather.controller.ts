@@ -33,7 +33,7 @@ export class WeatherController {
     const weather = await this.getWeatherUseCase.execute(lat, lon, location);
     return {
       message: 'Clima obtenido exitosamente',
-      data:    this.formatWeather(weather),
+      data: this.formatWeather(weather),
     };
   }
   @Get('box/:boxId')
@@ -41,25 +41,25 @@ export class WeatherController {
     const weather = await this.getWeatherUseCase.executeByBoxId(boxId);
     return {
       message: 'Clima del Box obtenido exitosamente',
-      data:    this.formatWeather(weather),
+      data: this.formatWeather(weather),
     };
   }
   private formatWeather(weather: any) {
     return {
-      location:           weather.locationName,
-      latitude:           weather.latitude,
-      longitude:          weather.longitude,
-      temperature:        weather.temperature,
-      feelsLike:          weather.feelsLike,
-      humidity:           weather.humidity,
-      uvIndex:            weather.uvIndex,
-      uvLevel:            weather.uvLevel(),
-      windSpeed:          weather.windSpeed,
-      weatherCode:        weather.weatherCode,
+      location: weather.locationName,
+      latitude: weather.latitude,
+      longitude: weather.longitude,
+      temperature: weather.temperature,
+      feelsLike: weather.feelsLike,
+      humidity: weather.humidity,
+      uvIndex: weather.uvIndex,
+      uvLevel: weather.uvLevel(),
+      windSpeed: weather.windSpeed,
+      weatherCode: weather.weatherCode,
       weatherDescription: weather.weatherDesc,
-      isDay:              weather.isDay,
-      isGoodForWatering:  weather.isGoodForWatering(),
-      fetchedAt:          weather.fetchedAt,
+      isDay: weather.isDay,
+      isGoodForWatering: weather.isGoodForWatering(),
+      fetchedAt: weather.fetchedAt,
     };
   }
 }

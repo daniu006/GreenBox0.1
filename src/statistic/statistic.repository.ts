@@ -38,21 +38,21 @@ export class StatisticRepository {
         },
       },
       update: {
-        avgTemperature:  data.avgTemperature,
-        avgHumidity:     data.avgHumidity,
-        avgLightHours:   data.avgLightHours,
-        avgWaterLevel:   data.avgWaterLevel,
+        avgTemperature: data.avgTemperature,
+        avgHumidity: data.avgHumidity,
+        avgLightHours: data.avgLightHours,
+        avgWaterLevel: data.avgWaterLevel,
         avgSoilMoisture: data.avgSoilMoisture,
         estimatedHealth: data.estimatedHealth,
-        generatedAt:     new Date(),
+        generatedAt: new Date(),
       },
       create: {
-        userPlantId:     data.userPlantId,
-        week:            data.week,
-        avgTemperature:  data.avgTemperature,
-        avgHumidity:     data.avgHumidity,
-        avgLightHours:   data.avgLightHours,
-        avgWaterLevel:   data.avgWaterLevel,
+        userPlantId: data.userPlantId,
+        week: data.week,
+        avgTemperature: data.avgTemperature,
+        avgHumidity: data.avgHumidity,
+        avgLightHours: data.avgLightHours,
+        avgWaterLevel: data.avgWaterLevel,
         avgSoilMoisture: data.avgSoilMoisture,
         estimatedHealth: data.estimatedHealth,
       },
@@ -66,7 +66,10 @@ export class StatisticRepository {
     });
   }
 
-  async findByWeek(userPlantId: number, week: number): Promise<Statistic | null> {
+  async findByWeek(
+    userPlantId: number,
+    week: number,
+  ): Promise<Statistic | null> {
     return this.prisma.statistic.findUnique({
       where: { userPlantId_week: { userPlantId, week } },
     });

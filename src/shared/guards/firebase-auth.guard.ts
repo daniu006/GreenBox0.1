@@ -1,5 +1,10 @@
-
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException, Logger } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+  Logger,
+} from '@nestjs/common';
 import * as admin from 'firebase-admin';
 
 @Injectable()
@@ -10,13 +15,13 @@ export class FirebaseAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const authHeader = request.headers['authorization'];
 
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new UnauthorizedException('Token no proporcionado');
     }
 
     const token = authHeader.split('Bearer ')[1];
 
-   try {
+    try {
       const decodedToken = await admin.auth().verifyIdToken(token);
 
       request.user = {
@@ -24,10 +29,10 @@ export class FirebaseAuthGuard implements CanActivate {
         email: decodedToken.email,
       };
 
-     return true;
+      return true;
     } catch (error) {
       this.logger.warn(`Token inválido: ${error.message}`);
-     throw new UnauthorizedException('Token inválido o expirado');
+      throw new UnauthorizedException('Token inválido o expirado');
     }
   }
 }

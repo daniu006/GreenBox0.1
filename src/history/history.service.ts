@@ -5,7 +5,12 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from 'src/shared/prisma/prisma.service';
-import { HistoryRepository, History, HistoryType, HISTORY_TYPES } from './history.repository';
+import {
+  HistoryRepository,
+  History,
+  HistoryType,
+  HISTORY_TYPES,
+} from './history.repository';
 
 export interface HistoryPeaks {
   temperature: { max: number; maxAt: Date; min: number; minAt: Date };
@@ -26,9 +31,12 @@ export class HistoryService {
   constructor(
     private readonly historyRepository: HistoryRepository,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
-  async save(userPlantId: number, type: HistoryType): Promise<History & { healthLabel: string }> {
+  async save(
+    userPlantId: number,
+    type: HistoryType,
+  ): Promise<History & { healthLabel: string }> {
     const userPlant = await this.prisma.userPlant.findUnique({
       where: { id: userPlantId },
       include: { plant: true },
@@ -43,20 +51,32 @@ export class HistoryService {
     });
 
     if (readings.length === 0) {
-      this.logger.warn(`Sin lecturas para guardar historial ${type} de userPlant ${userPlantId}`);
-      throw new NotFoundException('No hay lecturas suficientes para guardar el historial');
+      this.logger.warn(
+        `Sin lecturas para guardar historial ${type} de userPlant ${userPlantId}`,
+      );
+      throw new NotFoundException(
+        'No hay lecturas suficientes para guardar el historial',
+      );
     }
 
     const count = readings.length;
-    const avgTemperature = readings.reduce((s, r) => s + r.temperature, 0) / count;
+    const avgTemperature =
+      readings.reduce((s, r) => s + r.temperature, 0) / count;
     const avgHumidity = readings.reduce((s, r) => s + r.humidity, 0) / count;
-    const avgSoilMoisture = readings.reduce((s, r) => s + r.soilMoisture, 0) / count;
-    const avgLightHours = readings.reduce((s, r) => s + r.lightHours, 0) / count;
-    const avgWaterLevel = readings.reduce((s, r) => s + r.waterLevel, 0) / count;
+    const avgSoilMoisture =
+      readings.reduce((s, r) => s + r.soilMoisture, 0) / count;
+    const avgLightHours =
+      readings.reduce((s, r) => s + r.lightHours, 0) / count;
+    const avgWaterLevel =
+      readings.reduce((s, r) => s + r.waterLevel, 0) / count;
 
     const estimatedHealth = this.calculateHealth(
-      avgTemperature, avgHumidity, avgWaterLevel,
-      avgLightHours, avgSoilMoisture, userPlant.plant,
+      avgTemperature,
+      avgHumidity,
+      avgWaterLevel,
+      avgLightHours,
+      avgSoilMoisture,
+      userPlant.plant,
     );
 
     const history = await this.historyRepository.save({
@@ -72,7 +92,10 @@ export class HistoryService {
     });
 
     this.logger.log(`Historial ${type} guardado para userPlant ${userPlantId}`);
-    return { ...history, healthLabel: this.getHealthLabel(history.estimatedHealth) };
+    return {
+      ...history,
+      healthLabel: this.getHealthLabel(history.estimatedHealth),
+    };
   }
 
   async getByPeriod(
@@ -81,7 +104,9 @@ export class HistoryService {
     dateStr?: string,
   ): Promise<HistoryWithPeaks> {
     if (!HISTORY_TYPES.includes(period as HistoryType)) {
-      throw new BadRequestException(`Período inválido. Use: ${HISTORY_TYPES.join(', ')}`);
+      throw new BadRequestException(
+        `Período inválido. Use: ${HISTORY_TYPES.join(', ')}`,
+      );
     }
 
     const refDate = dateStr ? new Date(dateStr) : new Date();
@@ -90,7 +115,10 @@ export class HistoryService {
     if (period === 'daily') {
       records = await this.historyRepository.findByDay(userPlantId, refDate);
     } else if (period === 'weekly') {
-      records = await this.historyRepository.findByWeek(userPlantId, this.getWeekNumber(refDate));
+      records = await this.historyRepository.findByWeek(
+        userPlantId,
+        this.getWeekNumber(refDate),
+      );
     } else if (period === 'monthly') {
       records = await this.historyRepository.findByMonth(
         userPlantId,
@@ -100,7 +128,7 @@ export class HistoryService {
     }
 
     return {
-      records: records.map(r => ({
+      records: records.map((r) => ({
         ...r,
         healthLabel: this.getHealthLabel(r.estimatedHealth),
         xLabel: this.getXLabel(r.date, period),
@@ -119,12 +147,21 @@ export class HistoryService {
 
   private getXLabel(date: Date, period: string): string {
     if (period === 'daily') {
-      return date.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+      return date.toLocaleTimeString('es-EC', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     } else if (period === 'weekly') {
-      return date.toLocaleDateString('es-EC', { weekday: 'short', day: '2-digit' })
-        + ' ' + date.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' });
+      return (
+        date.toLocaleDateString('es-EC', { weekday: 'short', day: '2-digit' }) +
+        ' ' +
+        date.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit' })
+      );
     } else {
-      return date.toLocaleDateString('es-EC', { day: '2-digit', month: 'short' });
+      return date.toLocaleDateString('es-EC', {
+        day: '2-digit',
+        month: 'short',
+      });
     }
   }
 
@@ -135,8 +172,12 @@ export class HistoryService {
     }
 
     const findPeaks = (getValue: (r: History) => number) => {
-      const maxR = records.reduce((a, b) => getValue(a) > getValue(b) ? a : b);
-      const minR = records.reduce((a, b) => getValue(a) < getValue(b) ? a : b);
+      const maxR = records.reduce((a, b) =>
+        getValue(a) > getValue(b) ? a : b,
+      );
+      const minR = records.reduce((a, b) =>
+        getValue(a) < getValue(b) ? a : b,
+      );
       return {
         max: parseFloat(getValue(maxR).toFixed(2)),
         maxAt: maxR.date,
@@ -146,9 +187,9 @@ export class HistoryService {
     };
 
     return {
-      temperature: findPeaks(r => r.temperature),
-      humidity: findPeaks(r => r.humidity),
-      health: findPeaks(r => r.estimatedHealth),
+      temperature: findPeaks((r) => r.temperature),
+      humidity: findPeaks((r) => r.humidity),
+      health: findPeaks((r) => r.estimatedHealth),
     };
   }
 
@@ -176,31 +217,57 @@ export class HistoryService {
     avgSoilMoisture: number,
     plant: any,
   ): number {
-    const tempScore = avgTemperature >= plant.minTemperature && avgTemperature <= plant.maxTemperature
-      ? 100 : Math.max(0, 100 - Math.abs(avgTemperature - (plant.minTemperature + plant.maxTemperature) / 2) * 10);
-    const humidityScore = avgHumidity >= plant.minHumidity && avgHumidity <= plant.maxHumidity
-      ? 100 : Math.max(0, 100 - Math.abs(avgHumidity - (plant.minHumidity + plant.maxHumidity) / 2) * 10);
-    const waterScore = avgWaterLevel >= plant.minWaterLevel
-      ? 100 : Math.max(0, (avgWaterLevel / plant.minWaterLevel) * 100);
+    const tempScore =
+      avgTemperature >= plant.minTemperature &&
+      avgTemperature <= plant.maxTemperature
+        ? 100
+        : Math.max(
+            0,
+            100 -
+              Math.abs(
+                avgTemperature -
+                  (plant.minTemperature + plant.maxTemperature) / 2,
+              ) *
+                10,
+          );
+    const humidityScore =
+      avgHumidity >= plant.minHumidity && avgHumidity <= plant.maxHumidity
+        ? 100
+        : Math.max(
+            0,
+            100 -
+              Math.abs(
+                avgHumidity - (plant.minHumidity + plant.maxHumidity) / 2,
+              ) *
+                10,
+          );
+    const waterScore =
+      avgWaterLevel >= plant.minWaterLevel
+        ? 100
+        : Math.max(0, (avgWaterLevel / plant.minWaterLevel) * 100);
     const lightScore = Math.min(100, (avgLightHours / plant.lightHours) * 100);
     const minSoil = plant.minSoilMoisture ?? 30;
-    const soilScore = avgSoilMoisture >= minSoil
-      ? 100 : Math.max(0, (avgSoilMoisture / minSoil) * 100);
+    const soilScore =
+      avgSoilMoisture >= minSoil
+        ? 100
+        : Math.max(0, (avgSoilMoisture / minSoil) * 100);
 
     return (
       tempScore * 0.25 +
       humidityScore * 0.25 +
-      waterScore * 0.20 +
+      waterScore * 0.2 +
       lightScore * 0.15 +
       soilScore * 0.15
     );
   }
 
   private getWeekNumber(date: Date): number {
-    const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+    const d = new Date(
+      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
+    );
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   }
 }

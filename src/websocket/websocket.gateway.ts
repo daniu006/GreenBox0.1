@@ -16,8 +16,9 @@ import { SensorDataWsDto } from 'src/reading/reading.dto';
   cors: { origin: '*' },
   allowEIO3: true,
 })
-
-export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnect {
+export class WebSocketGateway
+  implements OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   private server: Server;
 
@@ -59,7 +60,6 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
     this.logger.log(`Cliente ${client.id} abandonó room ${room}`);
   }
 
-
   @SubscribeMessage('sensor:data')
   async handleSensorData(
     @MessageBody() data: SensorDataWsDto,
@@ -67,7 +67,6 @@ export class WebSocketGateway implements OnGatewayConnection, OnGatewayDisconnec
   ): Promise<void> {
     await this.websocketService.handleSensorData(data);
   }
-
 
   emitToRoom(room: string, event: string, data: unknown): void {
     this.server.to(room).emit(event, data);

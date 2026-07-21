@@ -13,7 +13,10 @@ import {
 } from '@nestjs/common';
 import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
 import { OptionalFirebaseAuthGuard } from 'src/shared/guards/optional-firebase-auth.guard';
-import { CurrentUser, CurrentUserPayload } from 'src/shared/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/shared/decorators/current-user.decorator';
 import { PlantService } from './plant.service';
 import { CreatePlantDto, UpdatePlantDto } from './plant.dto';
 

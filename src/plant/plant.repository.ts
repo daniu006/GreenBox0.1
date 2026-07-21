@@ -40,11 +40,11 @@ export const PLANT_CATEGORIES = [
   'vegetal',
 ] as const;
 
-export type PlantCategory = typeof PLANT_CATEGORIES[number];
+export type PlantCategory = (typeof PLANT_CATEGORIES)[number];
 
 @Injectable()
 export class PlantRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(): Promise<Plant[]> {
     return this.prisma.plant.findMany({

@@ -62,4 +62,4 @@ export class SensorDataWsDto {
   @Min(0)
   @Max(100)
   waterLevel: number;
-}
+}

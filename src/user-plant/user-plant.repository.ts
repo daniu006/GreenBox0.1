@@ -74,7 +74,10 @@ export class UserPlantRepository {
     });
   }
 
-  async findActiveByBox(boxId: number, userId: string): Promise<UserPlant | null> {
+  async findActiveByBox(
+    boxId: number,
+    userId: string,
+  ): Promise<UserPlant | null> {
     return this.prisma.userPlant.findFirst({
       where: { boxId, userId, archivedAt: null },
       include: { plant: true },

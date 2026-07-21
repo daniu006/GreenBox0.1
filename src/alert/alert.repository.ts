@@ -18,13 +18,17 @@ export const ALERT_TYPES = [
   'light',
 ] as const;
 
-export type AlertType = typeof ALERT_TYPES[number];
+export type AlertType = (typeof ALERT_TYPES)[number];
 
 @Injectable()
 export class AlertRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userPlantId: number, type: string, message: string): Promise<Alert> {
+  async create(
+    userPlantId: number,
+    type: string,
+    message: string,
+  ): Promise<Alert> {
     return this.prisma.alert.create({
       data: { userPlantId, type, message },
     });
@@ -48,7 +52,10 @@ export class AlertRepository {
     return this.prisma.alert.findUnique({ where: { id } });
   }
 
-  async findUnresolved(userPlantId: number, type: string): Promise<Alert | null> {
+  async findUnresolved(
+    userPlantId: number,
+    type: string,
+  ): Promise<Alert | null> {
     return this.prisma.alert.findFirst({
       where: { userPlantId, type, resolved: false },
     });

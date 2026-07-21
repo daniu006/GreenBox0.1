@@ -1,6 +1,19 @@
-import {Controller,Get,Patch,Delete,Param,ParseIntPipe,UseGuards,HttpCode,HttpStatus,} from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Delete,
+  Param,
+  ParseIntPipe,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
-import { CurrentUser, CurrentUserPayload } from 'src/shared/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/shared/decorators/current-user.decorator';
 import { AlertService } from './alert.service';
 
 @Controller('alert')
@@ -11,13 +24,21 @@ export class AlertController {
   @Get(':userPlantId/active')
   async getActive(@Param('userPlantId', ParseIntPipe) userPlantId: number) {
     const alerts = await this.alertService.getActive(userPlantId);
-    return { message: 'Alertas activas obtenidas', data: alerts, total: alerts.length };
+    return {
+      message: 'Alertas activas obtenidas',
+      data: alerts,
+      total: alerts.length,
+    };
   }
 
   @Get(':userPlantId')
   async getAll(@Param('userPlantId', ParseIntPipe) userPlantId: number) {
     const alerts = await this.alertService.getAll(userPlantId);
-    return { message: 'Alertas obtenidas exitosamente', data: alerts, total: alerts.length };
+    return {
+      message: 'Alertas obtenidas exitosamente',
+      data: alerts,
+      total: alerts.length,
+    };
   }
 
   @Patch(':id/resolve')

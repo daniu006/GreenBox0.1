@@ -34,31 +34,43 @@ export class BoxService {
     private readonly boxRepository: BoxRepository,
     private readonly prisma: PrismaService,
     private readonly cloudinaryService: CloudinaryService,
-  ) { }
+  ) {}
 
-  async validateCode(code: string, userId: string, userEmail?: string): Promise<ValidateCodeResult> {
+  async validateCode(
+    code: string,
+    userId: string,
+    userEmail?: string,
+  ): Promise<ValidateCodeResult> {
     const box = await this.boxRepository.findByCode(code.toUpperCase());
     if (!box) {
       throw new NotFoundException('El código del dispositivo no existe');
     }
 
     if (box.userId && box.userId !== userId) {
-      throw new ForbiddenException('Este dispositivo ya está asignado a otro usuario');
+      throw new ForbiddenException(
+        'Este dispositivo ya está asignado a otro usuario',
+      );
     }
 
     // Asegurar que el usuario existe en Postgres para evitar violación de llave foránea
-    const userExists = await this.prisma.user.findUnique({ where: { id: userId } });
+    const userExists = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
     if (!userExists) {
       // Verificar si existe por correo electrónico (caso: cuenta eliminada y recreada en Firebase)
       if (userEmail) {
-        const userByEmail = await this.prisma.user.findUnique({ where: { email: userEmail } });
+        const userByEmail = await this.prisma.user.findUnique({
+          where: { email: userEmail },
+        });
         if (userByEmail) {
           // Actualizar el ID antiguo con el nuevo ID de Firebase
           await this.prisma.user.update({
             where: { email: userEmail },
             data: { id: userId },
           });
-          this.logger.log(`Usuario actualizado con nuevo Firebase ID: ${userId}`);
+          this.logger.log(
+            `Usuario actualizado con nuevo Firebase ID: ${userId}`,
+          );
         } else {
           await this.prisma.user.create({
             data: {
@@ -68,7 +80,9 @@ export class BoxService {
               password: '',
             },
           });
-          this.logger.log(`Usuario creado automáticamente en Postgres: ${userId}`);
+          this.logger.log(
+            `Usuario creado automáticamente en Postgres: ${userId}`,
+          );
         }
       } else {
         await this.prisma.user.create({
@@ -79,7 +93,9 @@ export class BoxService {
             password: '',
           },
         });
-        this.logger.log(`Usuario creado automáticamente en Postgres: ${userId}`);
+        this.logger.log(
+          `Usuario creado automáticamente en Postgres: ${userId}`,
+        );
       }
     }
 
@@ -132,9 +148,16 @@ export class BoxService {
       throw new NotFoundException('Dispositivo no encontrado');
     }
     if (box.userId !== userId) {
-      throw new ForbiddenException('No tienes permiso para modificar este dispositivo');
+      throw new ForbiddenException(
+        'No tienes permiso para modificar este dispositivo',
+      );
     }
-    return this.boxRepository.updateLocation(boxId, latitude, longitude, locationName);
+    return this.boxRepository.updateLocation(
+      boxId,
+      latitude,
+      longitude,
+      locationName,
+    );
   }
 
   async registerToken(boxId: number, token: string): Promise<void> {
@@ -158,7 +181,9 @@ export class BoxService {
       throw new NotFoundException('Dispositivo no encontrado');
     }
     if (box.userId !== userId) {
-      throw new ForbiddenException('No tienes permiso para ver este dispositivo');
+      throw new ForbiddenException(
+        'No tienes permiso para ver este dispositivo',
+      );
     }
 
     const activeUserPlant = await this.prisma.userPlant.findFirst({
@@ -181,18 +206,25 @@ export class BoxService {
     };
   }
 
-  async updateProfile(boxId: number, userId: string, name?: string, profileImage?: string | null) {
+  async updateProfile(
+    boxId: number,
+    userId: string,
+    name?: string,
+    profileImage?: string | null,
+  ) {
     const box = await this.boxRepository.findById(boxId);
     if (!box) {
       throw new NotFoundException('Dispositivo no encontrado');
     }
     if (box.userId !== userId) {
-      throw new ForbiddenException('No tienes permiso para modificar este dispositivo');
+      throw new ForbiddenException(
+        'No tienes permiso para modificar este dispositivo',
+      );
     }
 
     const dataToUpdate: any = {};
     if (name !== undefined) dataToUpdate.locationName = name;
-    
+
     if (profileImage !== undefined) {
       let finalProfileImage: string | null = profileImage;
 
@@ -200,23 +232,32 @@ export class BoxService {
         try {
           // Eliminar foto anterior de Cloudinary para no saturar espacio
           if (box.profileImage && box.profileImage.startsWith('http')) {
-            await this.cloudinaryService.deleteByUrl(box.profileImage).catch((e) =>
-              this.logger.warn(`No se pudo borrar imagen anterior de Cloudinary: ${e.message}`)
-            );
+            await this.cloudinaryService
+              .deleteByUrl(box.profileImage)
+              .catch((e) =>
+                this.logger.warn(
+                  `No se pudo borrar imagen anterior de Cloudinary: ${e.message}`,
+                ),
+              );
           }
 
-          const base64Data = profileImage.replace(/^data:image\/\w+;base64,/, '');
+          const base64Data = profileImage.replace(
+            /^data:image\/\w+;base64,/,
+            '',
+          );
           const buffer = Buffer.from(base64Data, 'base64');
-          
+
           const uploadedUrl = await this.cloudinaryService.uploadBuffer(
             buffer,
             'greenbox/profiles',
-            `profile_${boxId}_${Date.now()}`
+            `profile_${boxId}_${Date.now()}`,
           );
-          
+
           finalProfileImage = uploadedUrl;
         } catch (err) {
-          this.logger.error(`Error subiendo foto de perfil a Cloudinary: ${err.message}`);
+          this.logger.error(
+            `Error subiendo foto de perfil a Cloudinary: ${err.message}`,
+          );
           finalProfileImage = box.profileImage;
         }
       }

@@ -1,6 +1,9 @@
 import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
 import { FirebaseAuthGuard } from 'src/shared/guards/firebase-auth.guard';
-import { CurrentUser, CurrentUserPayload } from 'src/shared/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/shared/decorators/current-user.decorator';
 import { UserService } from './user.service';
 import { UpdateUserDto } from './user.dto';
 

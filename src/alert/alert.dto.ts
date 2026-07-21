@@ -9,7 +9,7 @@ export class CreateAlertDto {
   @IsString()
   @IsIn(ALERT_TYPES, {
     message: `El tipo debe ser uno de: ${ALERT_TYPES.join(', ')}`,
-  })  
+  })
   type: string;
 
   @IsString()
